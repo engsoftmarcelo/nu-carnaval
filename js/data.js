@@ -42,12 +42,28 @@ export async function carregarDados() {
             const latCorrigida = corrigirCoordenada(linha['Latitude Local de Concentração'], 'lat');
             const lngCorrigida = corrigirCoordenada(linha['Longitude Local de Concentração'], 'lng');
 
+            // --- NOVO: Extração do Bairro/Regional ---
+            // Tenta pegar o último item do endereço (ex: "Rua X, 100, Savassi" -> "Savassi")
+            let bairro = "BH";
+            const localConcentracao = linha['Local de Concentração'];
+            
+            if (localConcentracao && localConcentracao.includes(',')) {
+                const partesEndereco = localConcentracao.split(',');
+                const possivelBairro = partesEndereco[partesEndereco.length - 1].trim();
+                
+                // Validação simples: se não for número (ex: "100") e tiver tamanho razoável
+                // Isso evita casos onde o endereço termina apenas com o número da rua
+                if (isNaN(possivelBairro) && possivelBairro.length > 2) {
+                    bairro = possivelBairro;
+                }
+            }
+
             return {
                 id: idGerado,
                 name: nomeBloco,
                 date: dataFormatada || "", 
                 time: linha['Horário'] || "A definir",
-                neighborhood: "BH", 
+                neighborhood: bairro, // Usa o bairro extraído em vez de "BH"
                 location: linha['Local de Concentração'] || "",
                 musical_style: estilos,
                 description: linha['Resumo'] || "",
