@@ -1,106 +1,138 @@
-// js/firebase.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+/* ==========================================================================
+   js/firebase.js - VERSÃO FINAL (CDN + Test Mode)
+   Projeto: nu-carnaval-2026-e9c3b
+   SDK: v12.8.0
+   ========================================================================== */
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 import { getFavoritos, importarFavoritos } from './storage.js';
 
-// Suas configurações (Copiadas do Console)
+// --- SUAS CHAVES DO PROJETO ---
 const firebaseConfig = {
-  apiKey: "AIzaSyCdqQQbV6eOLEeZSiHoDMqjrHw6pHF9XOc",
-  authDomain: "nu-carnaval-2026.firebaseapp.com",
-  projectId: "nu-carnaval-2026",
-  storageBucket: "nu-carnaval-2026.firebasestorage.app",
-  messagingSenderId: "887279427389",
-  appId: "1:887279427389:web:97c2274c605aaa2d43ef54",
-  measurementId: "G-X0B4G8DVTL"
+  apiKey: "AIzaSyBi6wODg7PVMmDnaF8wjGpfPBdtk1SF7Yg",
+  authDomain: "nu-carnaval-2026-e9c3b.firebaseapp.com",
+  projectId: "nu-carnaval-2026-e9c3b",
+  storageBucket: "nu-carnaval-2026-e9c3b.firebasestorage.app",
+  messagingSenderId: "152985754748",
+  appId: "1:152985754748:web:1f402ce47450eca2e4fdf9"
 };
 
-// Inicializa o Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
+// Variáveis globais do Firebase
+let app, auth, db, provider;
+let firebaseInicializado = false;
 
-// --- FUNÇÕES EXPORTADAS PARA O RESTO DO APP ---
+// --- INICIALIZAÇÃO ---
+try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    provider = new GoogleAuthProvider();
+    firebaseInicializado = true;
+    console.log("🔥 Firebase (nu-carnaval-2026-e9c3b) conectado! v12.8.0");
+} catch (e) {
+    console.error("🔥 Erro crítico ao inicializar Firebase:", e);
+}
 
-// 1. Função de Login com Google
+// --- LOGIN ---
 export async function loginGoogle() {
+    if (!firebaseInicializado) {
+        alert("Erro: Firebase não inicializou. Verifique o console (F12).");
+        return;
+    }
+
     try {
+        console.log("🔵 Abrindo popup do Google...");
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
-        console.log("Logado como:", user.displayName);
         
-        // Sincroniza dados assim que logar
-        await sincronizarDados(user);
+        console.log("✅ Logado com sucesso:", user.displayName);
+        alert(`Aê! Boas vindas, ${user.displayName.split(' ')[0]}!`);
         
+        // Sincroniza dados (sem travar se der erro no banco)
+        sincronizarDados(user).catch(err => console.warn("Aviso (Banco de Dados):", err.code || err));
+
         return user;
     } catch (error) {
-        console.error("Erro no login:", error);
-        alert("Ops! Não deu pra logar agora.");
+        console.error("❌ Erro no login:", error);
+        
+        if (error.code === 'auth/unauthorized-domain') {
+            alert("ERRO DE DOMÍNIO: Adicione a URL deste site (ou localhost) no Firebase Console > Authentication > Settings > Authorized Domains.");
+        } else if (error.code === 'auth/operation-not-allowed') {
+            alert("ERRO: O Login com Google não está ativado. Vá no Firebase Console > Authentication e ative o provedor Google.");
+        } else if (error.code === 'auth/popup-closed-by-user') {
+            console.log("Login cancelado pelo usuário.");
+        } else {
+            alert("Erro ao logar: " + error.message);
+        }
     }
 }
 
-// 2. Função de Sair (Logout)
+// --- LOGOUT ---
 export async function logout() {
     try {
         await signOut(auth);
-        alert("Você saiu da conta. Seus dados locais continuam aqui.");
-        location.reload();
+        alert("Desconectado.");
+        location.reload(); // Recarrega para limpar o visual
     } catch (error) {
         console.error("Erro ao sair:", error);
     }
 }
 
-// 3. Monitora se o usuário está logado ou não (Observer)
+// --- MONITORAMENTO (UI) ---
 export function monitorarAuth(callbackBotao) {
+    if (!auth) return;
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            // Se usuário logou, atualiza a interface (botão)
             callbackBotao(true, user);
+            // Sincroniza silenciosamente ao recarregar a página se já estiver logado
+            sincronizarDados(user).catch(() => {});
         } else {
             callbackBotao(false, null);
         }
     });
 }
 
-// 4. Salva Favoritos na Nuvem (Chamado quando você clica no coração)
+// --- SALVAR NA NUVEM (Ao clicar no coração) ---
 export async function salvarNaNuvem(favoritosArray) {
-    const user = auth.currentUser;
-    if (user) {
-        const userRef = doc(db, "users", user.uid);
-        try {
-            await updateDoc(userRef, { favoritos: favoritosArray });
-            console.log("☁️ Favoritos salvos na nuvem!");
-        } catch (e) {
-            console.error("Erro ao salvar na nuvem:", e);
-        }
+    if (!auth?.currentUser) return; // Só salva se logado
+    
+    try {
+        const userRef = doc(db, "users", auth.currentUser.uid);
+        await setDoc(userRef, { favoritos: favoritosArray }, { merge: true });
+        console.log("☁️ Favoritos salvos na nuvem.");
+    } catch (e) {
+        console.error("Erro ao salvar na nuvem:", e);
     }
 }
 
-// --- LÓGICA DE SINCRONIZAÇÃO (MAGIA) ---
+// --- SINCRONIZAÇÃO INTERNA ---
 async function sincronizarDados(user) {
     const userRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(userRef);
-    
-    // Pega o que já tem no celular
-    const favoritosLocais = getFavoritos();
+    const favoritosLocais = getFavoritos(); // Pega do storage.js
     
     if (docSnap.exists()) {
-        // Se usuário já existe na nuvem, misturamos tudo
+        // Usuário já existe na nuvem -> Mesclar dados
         const dadosNuvem = docSnap.data();
         const favoritosNuvem = dadosNuvem.favoritos || [];
         
-        // Junta os dois sem repetir (Set remove duplicatas)
+        // Junta local + nuvem sem duplicar
         const uniao = [...new Set([...favoritosLocais, ...favoritosNuvem])];
         
-        // Atualiza Local e Nuvem com a lista completa
-        importarFavoritos(uniao); 
-        await setDoc(userRef, { favoritos: uniao }, { merge: true });
-        
-        console.log("🔄 Dados sincronizados com sucesso!");
+        console.log(`🔄 Sincronizando: ${favoritosLocais.length} locais + ${favoritosNuvem.length} nuvem = ${uniao.length} total.`);
+
+        importarFavoritos(uniao); // Atualiza localStorage
+        await setDoc(userRef, { favoritos: uniao }, { merge: true }); // Atualiza nuvem
     } else {
-        // Primeiro acesso: sobe o que tem no celular para a nuvem
-        await setDoc(userRef, { favoritos: favoritosLocais });
-        console.log("☁️ Dados enviados para a nuvem pela primeira vez.");
+        // Primeiro acesso -> Criar perfil
+        console.log("✨ Criando perfil novo na nuvem...");
+        await setDoc(userRef, { 
+            favoritos: favoritosLocais,
+            email: user.email,
+            nome: user.displayName,
+            criado_em: new Date().toISOString()
+        });
     }
 }
