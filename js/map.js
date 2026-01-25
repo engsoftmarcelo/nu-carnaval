@@ -17,7 +17,7 @@ let wcLayer = null;
 let socorroLayer = null;
 
 // --- 1. CONFIGURAÇÃO DE CORES POR DATA ---
-// Mapeie as datas principais do seu JSON para cores distintas (Neo-Brutalism Palette)
+// Mapeamento das datas principais para cores distintas (Neo-Brutalism Palette)
 const DATE_COLORS = {
     '2026-01-31': '#FF2A00', // Sábado (Vermelho Neon)
     '2026-02-01': '#FFD700', // Domingo (Amarelo)
@@ -40,15 +40,41 @@ function formatarDataLegenda(isoDate) {
     return `${partes[2]}/${partes[1]}`;
 }
 
-// --- DADOS DE SOBREVIVÊNCIA (Pontos Fixos) ---
+// --- DADOS DE SOBREVIVÊNCIA (Pontos Fixos & Operação Especial 2026) ---
 const DADOS_UTILIDADE = [
-    { type: 'metro', name: 'Estação Central', lat: -19.916133, lng: -43.932652, info: 'Aberto até 01:00' },
-    { type: 'metro', name: 'Estação Santa Efigênia', lat: -19.919556, lng: -43.922250, info: 'Acesso Boulevard' },
-    { type: 'metro', name: 'Estação Lagoinha', lat: -19.912000, lng: -43.945000, info: 'Integração Move' },
-    { type: 'wc', name: 'Banheiros - Praça da Estação', lat: -19.9155, lng: -43.9335, info: 'Bateria com 50 unidades' },
-    { type: 'wc', name: 'Banheiros - Praça da Liberdade', lat: -19.932051, lng: -43.938046, info: 'Próximo ao CCBB' },
-    { type: 'wc', name: 'Banheiros - Sapucaí', lat: -19.918, lng: -43.928, info: 'Mirante' },
-    { type: 'socorro', name: 'Posto Médico Avançado', lat: -19.917, lng: -43.935, info: 'Atendimento 24h' }
+    // --- LINHA 1: METRÔ BH (Dados Operacionais do Relatório) ---
+    // Vetor Oeste
+    { type: 'metro', name: 'Estação Eldorado', lat: -19.9329, lng: -44.0277, info: '🚨 Abre 05h Sábado (01/03)! Terminal Oeste.' },
+    { type: 'metro', name: 'Estação Cidade Industrial', lat: -19.9365, lng: -44.0173, info: 'Acesso Barreiro/Industrial. Rápido e Seguro.' },
+    { type: 'metro', name: 'Estação Vila Oeste', lat: -19.9312, lng: -43.9984, info: 'Funcionamento 05h15 às 23h. Intervalo 10 min.' },
+    { type: 'metro', name: 'Estação Gameleira', lat: -19.9275, lng: -43.9881, info: 'Acesso Expominas. Trens a cada 10 min.' },
+    { type: 'metro', name: 'Estação Calafate', lat: -19.9238, lng: -43.9749, info: 'Acesso Blocos Zona Oeste. Proibido Vidro.' },
+    
+    // Vetor Central (Crítico)
+    { type: 'metro', name: 'Estação Carlos Prates', lat: -19.9168, lng: -43.9576, info: 'Acesso Barro Preto / Fórum. Aberto até 23h.' },
+    { type: 'metro', name: 'Estação Lagoinha', lat: -19.9126, lng: -43.9431, info: '💡 Dica: Evite a Central. Desça aqui para o "Então Brilha".' },
+    { type: 'metro', name: 'Estação Central', lat: -19.9157, lng: -43.9353, info: '⚠️ Entrada APENAS r. Aarão Reis. Túnel Sapucaí Fechado.' },
+    
+    // Vetor Leste/Hospitalar
+    { type: 'metro', name: 'Estação Santa Efigênia', lat: -19.9189, lng: -43.9231, info: 'Acesso Área Hospitalar e UPA Centro-Sul.' },
+    { type: 'metro', name: 'Estação Santa Tereza', lat: -19.9135, lng: -43.9142, info: '🔥 Coração do Carnaval. Acesso Blocos de Rua.' },
+    { type: 'metro', name: 'Estação Horto Florestal', lat: -19.8974, lng: -43.9161, info: 'Alternativa tranquila para acesso ao Leste.' },
+    { type: 'metro', name: 'Estação Santa Inês', lat: -19.8887, lng: -43.9153, info: 'Acesso rápido à folia de Santa Tereza.' },
+    { type: 'metro', name: 'Estação José Cândido', lat: -19.8828, lng: -43.9202, info: 'Melhor descida para Pena de Pavão (Domingo).' },
+    
+    // Vetor Norte
+    { type: 'metro', name: 'Estação Minas Shopping', lat: -19.8735, lng: -43.9255, info: 'Acesso Shopping e Hotéis. Ponto de apoio.' },
+    { type: 'metro', name: 'Estação São Gabriel', lat: -19.8544, lng: -43.9197, info: '🚨 Abre 05h Sábado (01/03)! Conexão Rodoviária.' },
+    { type: 'metro', name: 'Estação Primeiro de Maio', lat: -19.8402, lng: -43.9261, info: 'Metrô Ativo. 05h15 às 23h.' },
+    { type: 'metro', name: 'Estação Waldomiro Lobo', lat: -19.8331, lng: -43.9333, info: 'Acesso Norte. Aceita pagamento por aproximação.' },
+    { type: 'metro', name: 'Estação Floramar', lat: -19.8228, lng: -43.9435, info: 'Estação tranquila. Evite multidões.' },
+    { type: 'metro', name: 'Estação Vilarinho', lat: -19.8145, lng: -43.9515, info: '🚨 Abre 05h Sábado (01/03)! Terminal Venda Nova.' },
+
+    // --- INFRAESTRUTURA DE SAÚDE E SANEAMENTO (Relatório 2026) ---
+    { type: 'socorro', name: 'PMA Central (CRJ)', lat: -19.9155, lng: -43.9355, info: '🏥 Urgência 24h. Praça da Estação (Ao lado do Metrô).' },
+    { type: 'wc', name: 'Banheiros Fixos - Centro', lat: -19.9155, lng: -43.9335, info: 'Bolsão Praça da Estação. Manutenção constante.' },
+    { type: 'wc', name: 'Banheiros Fixos - Savassi', lat: -19.932051, lng: -43.938046, info: 'Zona de Pontos Fixos (Quarteirões Fechados).' },
+    { type: 'wc', name: 'Banheiros - Sapucaí', lat: -19.918, lng: -43.928, info: 'Mirante. Bateria de Químicos Volantes.' }
 ];
 
 const criarIconeUtilidade = (tipo) => {
@@ -78,19 +104,19 @@ export function initMap(blocos) {
     const container = document.getElementById('mapa-container');
     if (!container) return;
 
-    // Inicializa o mapa centralizado em BH
+    // Inicializa o mapa centralizado em BH (Praça Sete aprox)
     map = L.map('mapa-container', { zoomControl: false }).setView([-19.916681, -43.934493], 13);
     
     // Move o zoom para o topo direito
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // Tiles (CartoDB Voyager - Estilo limpo)
+    // Tiles (CartoDB Voyager - Estilo limpo para destacar os blocos)
     const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap &copy; CARTO',
         maxZoom: 19
     }).addTo(map);
     
-    // Aplica filtro CSS para deixar o mapa em tons de cinza (destaca os marcadores coloridos)
+    // Aplica filtro CSS para deixar o mapa base em tons de cinza
     tiles.getContainer().style.filter = 'grayscale(100%) contrast(1.1)';
 
     // Inicializa Camadas
@@ -109,23 +135,21 @@ export function initMap(blocos) {
         else if (item.type === 'socorro') socorroLayer.addLayer(marker);
     });
 
-    // Controle de Camadas
+    // Controle de Camadas (Layers Control)
     const overlayMaps = {
         "<i class='fas fa-music'></i> Blocos": markersLayer,
         "<i class='fas fa-restroom'></i> Banheiros": wcLayer,
         "<i class='fas fa-subway'></i> Metrô": metroLayer,
-        "<i class='fas fa-medkit'></i> Socorro": socorroLayer
+        "<i class='fas fa-medkit'></i> Saúde (PMA)": socorroLayer
     };
 
     L.control.layers(null, overlayMaps, { position: 'topleft', collapsed: true }).addTo(map);
 
-    // --- 2. ADICIONA A LEGENDA NO MAPA ---
+    // Adiciona a Legenda e Botão GPS
     addLegend(map);
-
-    // Configura botão de "Perto de Mim"
     setupGeoButton();
     
-    // Renderiza os marcadores iniciais
+    // Renderiza os marcadores iniciais dos blocos
     atualizarMarcadores(blocos);
 }
 
@@ -137,7 +161,7 @@ function addLegend(map) {
         const div = L.DomUtil.create('div', 'info legend');
         let html = '<h4 style="margin:0 0 8px 0; font-size:0.9rem; text-transform:uppercase;">Datas</h4>';
 
-        // Percorre as datas definidas em DATE_COLORS para criar a lista
+        // Percorre as datas definidas em DATE_COLORS
         for (const [date, color] of Object.entries(DATE_COLORS)) {
             if (date === 'default') continue; 
             
@@ -149,7 +173,7 @@ function addLegend(map) {
             `;
         }
         
-        // Adiciona item para "Outros"
+        // Item para "Outros"
         html += `
             <div class="legend-item">
                 <span class="legend-color" style="background:${DATE_COLORS['default']}"></span>
@@ -164,7 +188,7 @@ function addLegend(map) {
     legend.addTo(map);
 }
 
-// --- FUNÇÃO DE ATUALIZAÇÃO DOS MARCADORES ---
+// --- FUNÇÃO DE ATUALIZAÇÃO DOS MARCADORES DE BLOCOS ---
 export function atualizarMarcadores(blocosFiltrados) {
     if (!map || !markersLayer) return;
 
@@ -172,16 +196,12 @@ export function atualizarMarcadores(blocosFiltrados) {
 
     blocosFiltrados.forEach(bloco => {
         const temPonto = bloco.lat && bloco.lng;
-        // Verifica se tem rota predefinida OU rota calculada (lat/lng -> latDisp/lngDisp)
-        // No seu data.js atual, 'route' não está sendo gerado explicitamente, mas se você tiver, a lógica abaixo funciona.
-        // O foco aqui é mostrar o marcador principal.
         
         if (temPonto) {
-            // --- 3. LÓGICA DE COR POR DATA ---
+            // Define a cor baseada na data
             const corNeon = DATE_COLORS[bloco.date] || DATE_COLORS['default'];
 
             // Conteúdo do Popup
-            // NOTA: O botão chama 'window.abrirDetalhesDoMapa' definido no app.js
             const popupContent = `
                 <div class="map-popup">
                     <h3>${bloco.name}</h3>
@@ -193,7 +213,7 @@ export function atualizarMarcadores(blocosFiltrados) {
                 </div>
             `;
 
-            // Estilo do Marcador (Bolinha)
+            // Estilo do Marcador (Bolinha Colorida)
             const markerOptions = {
                 radius: 8,
                 fillColor: corNeon,
@@ -203,7 +223,6 @@ export function atualizarMarcadores(blocosFiltrados) {
                 fillOpacity: 1
             };
 
-            // Desenha a bolinha
             L.circleMarker([bloco.lat, bloco.lng], markerOptions).bindPopup(popupContent).addTo(markersLayer);
         }
     });
@@ -229,7 +248,7 @@ function setupGeoButton() {
 
                 if (userMarker) map.removeLayer(userMarker);
 
-                // Marcador do usuário (Verde Neon bem chamativo)
+                // Marcador do usuário (Verde Neon Chamativo)
                 userMarker = L.circleMarker(userPos, {
                     radius: 12,
                     fillColor: "#CCFF00",
@@ -239,7 +258,7 @@ function setupGeoButton() {
                     fillOpacity: 1
                 }).addTo(map);
 
-                userMarker.bindPopup("<b>Você</b><br>Perdido no meio do povo").openPopup();
+                userMarker.bindPopup("<b>Você</b><br>No meio da folia").openPopup();
                 map.setView(userPos, 16);
                 btnGeo.classList.remove('searching');
             },
@@ -254,7 +273,7 @@ function setupGeoButton() {
 }
 
 /* ==========================================================================
-   NOVO: MAPA DE DETALHES (TRAJETO)
+   MAPA DE DETALHES (TRAJETO NO MODAL)
    Renderiza o mini-mapa dentro da tela de detalhes do bloco
    ========================================================================== */
 export function renderDetalheMap(bloco) {
@@ -263,7 +282,7 @@ export function renderDetalheMap(bloco) {
 
     if (!container) return;
 
-    // 1. Limpa mapa anterior se existir (Importante para evitar erro do Leaflet: "Map container is already initialized")
+    // 1. Limpa mapa anterior se existir
     if (miniMap) {
         miniMap.remove();
         miniMap = null;
@@ -279,17 +298,16 @@ export function renderDetalheMap(bloco) {
     }
 
     // 3. Inicializa Mapa
-    // Centraliza na concentração ou dispersão inicialmente
     const center = temConcentracao ? [bloco.lat, bloco.lng] : [bloco.latDisp, bloco.lngDisp];
     
     miniMap = L.map(containerId, {
-        zoomControl: false, // Visual limpo
-        attributionControl: false, // Oculta atribuição para economizar espaço no card
+        zoomControl: false,
+        attributionControl: false,
         dragging: true,
-        scrollWheelZoom: false // Evita scroll da página travar no mapa
+        scrollWheelZoom: false
     }).setView(center, 15);
 
-    // Tiles (CartoDB Voyager)
+    // Tiles
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         maxZoom: 19
     }).addTo(miniMap);
@@ -302,7 +320,7 @@ export function renderDetalheMap(bloco) {
             className: 'custom-pin',
             html: '<div style="background-color:#00C853; width:16px; height:16px; border-radius:50%; border:3px solid #1A1A1A; box-shadow: 2px 2px 0px rgba(0,0,0,0.2);"></div>',
             iconSize: [20, 20],
-            iconAnchor: [10, 10], // Centraliza
+            iconAnchor: [10, 10],
             popupAnchor: [0, -10]
         });
 
@@ -330,19 +348,18 @@ export function renderDetalheMap(bloco) {
         bounds.extend([bloco.latDisp, bloco.lngDisp]);
     }
 
-    // 6. Desenha Linha do Trajeto (Se tiver os dois pontos)
+    // 6. Desenha Linha do Trajeto
     if (temConcentracao && temDispersao) {
         L.polyline([[bloco.lat, bloco.lng], [bloco.latDisp, bloco.lngDisp]], {
             color: '#1A1A1A',
             weight: 4,
-            dashArray: '10, 10', // Linha tracejada estilosa
+            dashArray: '10, 10',
             opacity: 0.8
         }).addTo(miniMap);
     }
 
-    // 7. Ajusta Zoom para caber tudo com margem
+    // 7. Ajusta Zoom
     if (temConcentracao || temDispersao) {
-        // Se for só um ponto, mantém zoom 15, se forem dois, ajusta bounds
         if (temConcentracao && temDispersao) {
             miniMap.fitBounds(bounds, { padding: [40, 40] });
         } else {
