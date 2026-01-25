@@ -7,7 +7,8 @@
 import { carregarDados } from './data.js';
 // CORREÇÃO: Adicionado 'mostrarDetalhes' aos imports para usar na função do mapa
 import { renderBlocos, mudarVisualizacao, atualizarBotaoFavorito, renderTimeline, renderStats, mostrarDetalhes } from './ui.js';
-import { initMap, atualizarMarcadores } from './map.js';
+// ATUALIZAÇÃO: Adicionado focarCategoriaNoMapa para os cards de utilidade
+import { initMap, atualizarMarcadores, focarCategoriaNoMapa } from './map.js';
 import { getFavoritos, toggleFavorito, importarFavoritos, toggleCheckin, getCheckinCount } from './storage.js';
 import { NotificationManager } from './notifications.js';
 // Importação do Firebase (NOVO)
@@ -185,6 +186,33 @@ function setupEventListeners() {
             aplicarFiltros();
         });
     });
+
+    // --- NOVO: Lógica dos Cards de Utilidade (Metrô e Saúde) ---
+    const cardMetro = document.getElementById('card-metro');
+    if (cardMetro) {
+        cardMetro.addEventListener('click', () => {
+            mudarVisualizacao('view-mapa');
+            document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('active'));
+            document.querySelector('a[href="#mapa"]').classList.add('active');
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize')); 
+                focarCategoriaNoMapa('metro'); 
+            }, 200);
+        });
+    }
+
+    const cardSocorro = document.getElementById('card-socorro');
+    if (cardSocorro) {
+        cardSocorro.addEventListener('click', () => {
+            mudarVisualizacao('view-mapa');
+            document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('active'));
+            document.querySelector('a[href="#mapa"]').classList.add('active');
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+                focarCategoriaNoMapa('socorro'); 
+            }, 200);
+        });
+    }
 
     // 3. Botão Favoritar
     document.addEventListener('click', (e) => {
@@ -388,7 +416,7 @@ function inicializarFiltrosUI() {
 
             grupo.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
 
-            if (!jaEstavaAtivo) {
+            if (!jaAtivo) {
                 e.target.classList.add('active');
                 appState.filtros[tipo] = valor;
             } else {

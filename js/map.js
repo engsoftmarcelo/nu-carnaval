@@ -367,3 +367,34 @@ export function renderDetalheMap(bloco) {
         }
     }
 }
+
+// --- NOVA FUNÇÃO: Ativar camadas específicas via clique externo ---
+export function focarCategoriaNoMapa(categoria) {
+    if (!map) return;
+
+    // Remove camadas extras para limpar a visão
+    if (map.hasLayer(wcLayer)) map.removeLayer(wcLayer);
+    
+    // Lógica para Metrô
+    if (categoria === 'metro' && metroLayer) {
+        if (!map.hasLayer(metroLayer)) {
+            map.addLayer(metroLayer);
+        }
+        // Tenta dar zoom para mostrar os pontos
+        const group = L.featureGroup(metroLayer.getLayers());
+        if (group.getLayers().length > 0) {
+            map.fitBounds(group.getBounds(), { padding: [50, 50] });
+        }
+    }
+    
+    // Lógica para Saúde/Socorro
+    if (categoria === 'socorro' && socorroLayer) {
+        if (!map.hasLayer(socorroLayer)) {
+            map.addLayer(socorroLayer);
+        }
+        const group = L.featureGroup(socorroLayer.getLayers());
+        if (group.getLayers().length > 0) {
+            map.fitBounds(group.getBounds(), { padding: [50, 50] });
+        }
+    }
+}
