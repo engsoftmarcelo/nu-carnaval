@@ -139,10 +139,44 @@
 }
 
 .leaflet-control-layers-toggle {
-    background-image: url('images/layers.png'); /* O Leaflet usa padrão, mas o estilo acima já dá o toque */
+    background-image: url('../assets/images/layers.png'); /* Ajustado caminho relativo se necessário */
 }
 
 .leaflet-control-layers-expanded {
     padding: 10px !important;
     background: #FFF !important;
+}
+
+/* ==========================================================================
+   LEGENDA DO MAPA (Novo)
+   Estilo Neo-Brutalista para combinar com a UI
+   ========================================================================== */
+.info.legend {
+    background: var(--color-surface, #FFFFFF);
+    padding: 12px;
+    border: 2px solid var(--color-asphalt, #1A1A1A);
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    max-height: 200px; /* Caso tenha muitos dias */
+    overflow-y: auto;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    font-weight: 700;
+    color: var(--color-text, #1A1A1A);
+}
+
+.legend-color {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #1A1A1A;
+    margin-right: 8px;
+    flex-shrink: 0;
 }

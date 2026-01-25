@@ -5,7 +5,8 @@
    ========================================================================== */
 
 import { carregarDados } from './data.js';
-import { renderBlocos, mudarVisualizacao, atualizarBotaoFavorito, renderTimeline, renderStats } from './ui.js';
+// CORREÇÃO: Adicionado 'mostrarDetalhes' aos imports para usar na função do mapa
+import { renderBlocos, mudarVisualizacao, atualizarBotaoFavorito, renderTimeline, renderStats, mostrarDetalhes } from './ui.js';
 import { initMap, atualizarMarcadores } from './map.js';
 import { getFavoritos, toggleFavorito, importarFavoritos, toggleCheckin, getCheckinCount } from './storage.js';
 import { NotificationManager } from './notifications.js';
@@ -71,6 +72,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         appState.todosBlocos = await carregarDados();
         appState.blocosFiltrados = [...appState.todosBlocos];
         
+        // --- CORREÇÃO: EXPOR FUNÇÃO PARA O MAPA ---
+        // Cria a ponte global que o popup do Leaflet vai chamar ao clicar em "+ Detalhes"
+        window.abrirDetalhesDoMapa = (id) => {
+            const bloco = appState.todosBlocos.find(b => b.id === id);
+            if (bloco) {
+                mostrarDetalhes(bloco); // Agora esta função está importada corretamente
+            } else {
+                console.error("Bloco não encontrado:", id);
+            }
+        };
+        // -------------------------------------------
+
         // 2. Inicializa a UI de Filtros Avançados
         inicializarFiltrosUI();
 
