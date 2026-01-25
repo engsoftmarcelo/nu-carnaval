@@ -412,11 +412,13 @@ function inicializarFiltrosUI() {
             const valor = e.target.dataset.value;
 
             const grupo = e.target.parentElement;
+            // AQUI ESTAVA O ERRO, CORRIGIDO ABAIXO
             const jaEstavaAtivo = e.target.classList.contains('active');
 
             grupo.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
 
-            if (!jaAtivo) {
+            // CORREÇÃO: Usar a variável correta 'jaEstavaAtivo'
+            if (!jaEstavaAtivo) {
                 e.target.classList.add('active');
                 appState.filtros[tipo] = valor;
             } else {
