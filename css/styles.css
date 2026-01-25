@@ -1,0 +1,978 @@
+/* ==========================================================================
+   css/styles.css
+   Estilos da UI - Identidade "Nu! Carnaval" (Neo-Brutalismo)
+   Bordas grossas, Sombras duras, Cores Neon.
+   ========================================================================== */
+
+/* --- 1. Estrutura Global e Tipografia --- */
+body {
+    font-family: var(--font-body);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    /* Remove o "bouncing" do scroll no iOS */
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3 {
+    font-family: var(--font-display);
+    text-transform: uppercase; /* Caixa alta para impacto */
+    letter-spacing: 0.5px;
+    line-height: 1.1;
+}
+
+/* --- 2. Header Fixo (Estilo Sticker - CORRIGIDO) --- */
+.app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: var(--header-height); /* 130px conforme variables.css */
+    
+    /* Fundo sólido (ou levemente translúcido) com borda dura */
+    background-color: rgba(240, 240, 235, 0.95); /* Baseado no Branco Papel */
+    backdrop-filter: blur(5px);
+    border-bottom: var(--border-width) solid var(--color-border);
+    
+    /* Padding generoso para não cortar */
+    padding: 20px 16px 16px 16px; 
+    z-index: 1000;
+    
+    /* Garante respeito à área segura do iPhone (notch) */
+    padding-top: max(20px, env(safe-area-inset-top));
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 12px;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+/* O Logo "Adesivo" */
+.header-top h1 {
+    line-height: 0; 
+    background-color: var(--color-primary); /* Fundo Vermelho Neon */
+    padding: 8px 12px;
+    border: var(--border-width) solid var(--color-asphalt);
+    box-shadow: 4px 4px 0px var(--color-asphalt); /* Sombra dura */
+    transform: rotate(-2deg); /* Levemente torto */
+    display: inline-block; 
+}
+
+/* Botão de Filtro no Header */
+#filter-toggle {
+    font-size: 1.4rem;
+    color: var(--color-asphalt);
+    padding: 8px;
+    border: var(--border-width) solid transparent;
+    transition: transform 0.1s;
+}
+#filter-toggle:active {
+    transform: scale(0.9);
+}
+
+.search-container {
+    position: relative;
+    width: 100%;
+}
+
+/* Input Brutalista */
+#search-input {
+    width: 100%;
+    height: 44px;
+    padding: 0 16px 0 44px;
+    
+    border: var(--border-width) solid var(--color-asphalt);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 1rem;
+    
+    box-shadow: 4px 4px 0px var(--color-concrete);
+    transition: all 0.2s ease;
+}
+
+#search-input::placeholder {
+    color: var(--color-text-light);
+    font-weight: 400;
+}
+
+#search-input:focus {
+    outline: none;
+    border-color: var(--color-asphalt);
+    /* Sombra Amarela no foco */
+    box-shadow: 4px 4px 0px var(--color-cta); 
+    transform: translate(-1px, -1px);
+}
+
+.search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-asphalt);
+    font-size: 1.1rem;
+    pointer-events: none;
+}
+
+/* --- 3. Container Principal --- */
+#main-content {
+    /* Ajuste para o header mais alto */
+    padding-top: calc(var(--header-height) + 20px); 
+    padding-bottom: 90px;
+    padding-left: 16px;
+    padding-right: 16px;
+    min-height: 100vh;
+}
+
+/* Gerenciamento de Visibilidade */
+.view-hidden {
+    display: none !important;
+}
+
+.active-view {
+    display: block;
+    animation: slideUp 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- 4. Chips de Filtro (Estilo Base herdado) --- */
+.filter-chips {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 4px 4px 14px 4px;
+    margin-bottom: 10px;
+    scrollbar-width: none;
+}
+.filter-chips::-webkit-scrollbar { display: none; }
+
+.chip {
+    background-color: var(--color-surface);
+    color: var(--color-asphalt);
+    border: var(--border-width) solid var(--color-asphalt);
+    border-radius: var(--radius-sm);
+    
+    padding: 8px 18px;
+    font-family: var(--font-body);
+    font-weight: 800;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    
+    box-shadow: 2px 2px 0px var(--color-asphalt);
+    transition: all 0.1s;
+}
+
+.chip:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0px 0px 0px var(--color-asphalt);
+}
+
+.chip.active {
+    background-color: var(--color-asphalt);
+    color: var(--color-cta); /* Texto Amarelo no fundo Preto */
+    box-shadow: 3px 3px 0px var(--color-cta);
+    border-color: var(--color-asphalt);
+}
+
+/* --- 5. Grid de Cards --- */
+.cards-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+@media (min-width: 600px) {
+    .cards-container {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+}
+
+/* Loading Spinner Brutalista */
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 6px solid var(--color-asphalt);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 40px auto;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* --- 6. Card do Bloco --- */
+.bloco-card {
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-asphalt);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-hard);
+    
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: all 0.1s;
+    overflow: hidden;
+    cursor: pointer; /* Indica que é clicável */
+}
+
+.bloco-card:active {
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0px var(--color-asphalt);
+}
+
+.card-header {
+    padding: 16px;
+    padding-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    color: var(--color-asphalt);
+    width: 85%;
+}
+
+.fav-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.6rem;
+    color: #DDD;
+    cursor: pointer;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: -10px;
+    margin-right: -10px;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.fav-btn.favorited {
+    color: var(--color-fav);
+    transform: scale(1.2);
+    filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.2));
+}
+
+.card-body {
+    padding: 12px 16px 16px 16px;
+}
+
+.card-info {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.card-info i {
+    font-size: 1.1rem;
+    color: var(--color-primary);
+}
+
+.card-tags {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tag {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    background-color: var(--color-bg);
+    color: var(--color-asphalt);
+    border: 1px solid var(--color-asphalt);
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+/* Status AO VIVO */
+.status-live {
+    display: inline-block;
+    background-color: var(--color-live);
+    color: var(--color-asphalt);
+    font-family: var(--font-display);
+    font-size: 1rem;
+    padding: 4px 8px;
+    margin-bottom: 8px;
+    border: 2px solid var(--color-asphalt);
+    transform: rotate(-1deg);
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+    animation: pulseBrutal 1s infinite alternate;
+}
+
+@keyframes pulseBrutal {
+    from { transform: scale(1) rotate(-1deg); }
+    to { transform: scale(1.05) rotate(-1deg); }
+}
+
+/* --- 7. Bottom Navigation --- */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: var(--nav-height);
+    
+    background-color: var(--color-surface);
+    border-top: var(--border-width) solid var(--color-asphalt);
+    
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 1000;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    box-shadow: 0px -4px 10px rgba(0,0,0,0.05);
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--color-text-light);
+    width: 100%;
+    height: 100%;
+    transition: all 0.2s;
+}
+
+.nav-item i {
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+}
+
+.nav-item span {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.nav-item.active {
+    color: var(--color-primary);
+    background-color: rgba(255, 42, 0, 0.05);
+}
+.nav-item.active i {
+    transform: translateY(-2px);
+    filter: drop-shadow(1px 1px 0px var(--color-asphalt));
+}
+
+/* --- 8. Utilitários --- */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--color-text-light);
+}
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    color: var(--color-concrete);
+    border: 2px dashed var(--color-concrete);
+    padding: 20px;
+    border-radius: 50%;
+}
+.empty-state p {
+    font-family: var(--font-script);
+    font-size: 1.4rem;
+    color: var(--color-asphalt);
+    transform: rotate(-2deg);
+}
+
+.emergency-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.btn-emergency {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 60px;
+    border: var(--border-width) solid var(--color-asphalt);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-hard);
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: #FFF;
+    text-decoration: none;
+    transition: all 0.1s;
+}
+.btn-emergency:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0px 0px 0px black;
+}
+.btn-emergency.pol { background-color: var(--color-asphalt); }
+.btn-emergency.samu { background-color: var(--color-error); }
+
+.utility-card {
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-asphalt);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 20px;
+    margin-bottom: 16px;
+}
+.utility-card h3 {
+    color: var(--color-primary);
+    margin-bottom: 8px;
+    font-size: 1.2rem;
+}
+
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.header-section h2 {
+    font-size: 2rem;
+    color: var(--color-asphalt);
+    text-decoration: underline;
+    text-decoration-color: var(--color-cta);
+    text-decoration-thickness: 4px;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    border: 2px solid var(--color-asphalt);
+    background: var(--color-bg);
+    border-radius: var(--radius-sm);
+    font-weight: bold;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+/* --- 9. Dark Mode --- */
+@media (prefers-color-scheme: dark) {
+    .app-header, .bottom-nav, .detalhes-header {
+        background-color: var(--color-surface);
+        border-color: var(--color-border);
+    }
+    .bloco-card {
+        box-shadow: 4px 4px 0px #000;
+    }
+    #search-input {
+        background-color: #222;
+        border-color: #555;
+    }
+    .nav-item.active {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+}
+
+/* --- 10. View de Detalhes (Tela Cheia) --- */
+#view-detalhes {
+    background-color: var(--color-bg);
+    min-height: 100vh;
+    padding: 20px;
+    padding-top: 80px; /* Espaço para o header fixo interno */
+    animation: slideInRight 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Header fixo da tela de detalhes */
+.detalhes-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    background-color: var(--color-surface);
+    border-bottom: var(--border-width) solid var(--color-asphalt);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 2000; /* Acima de tudo */
+}
+
+.detalhes-header h3 {
+    font-size: 1.2rem;
+    color: var(--color-asphalt);
+    margin: 0;
+}
+
+.btn-icon-back, .btn-icon-share {
+    background: var(--color-bg);
+    border: 2px solid var(--color-asphalt);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    box-shadow: 2px 2px 0px var(--color-asphalt);
+    cursor: pointer;
+}
+.btn-icon-back:active, .btn-icon-share:active { 
+    transform: translate(2px, 2px); 
+    box-shadow: none; 
+}
+
+/* Conteúdo Interno dos Detalhes */
+.detalhe-hero {
+    background-color: var(--color-surface);
+    border: 2px solid var(--color-asphalt);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    box-shadow: 6px 6px 0px var(--color-asphalt);
+    margin-bottom: 24px;
+}
+
+.detalhe-titulo {
+    font-size: 2rem;
+    line-height: 1;
+    margin-bottom: 12px;
+    color: var(--color-primary);
+    text-transform: uppercase;
+}
+
+.detalhe-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.meta-box {
+    background: var(--color-bg);
+    border: 2px solid var(--color-asphalt);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+}
+
+.meta-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--color-text-light);
+    display: block;
+    margin-bottom: 4px;
+}
+.meta-valor {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--color-asphalt);
+}
+
+.detalhe-mapa-btn {
+    display: block;
+    width: 100%;
+    background-color: var(--color-cta);
+    color: var(--color-cta-text);
+    border: 2px solid var(--color-asphalt);
+    padding: 16px;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    text-align: center;
+    margin-top: 24px;
+    box-shadow: 4px 4px 0px var(--color-asphalt);
+    text-decoration: none;
+    font-weight: 800;
+}
+.detalhe-mapa-btn:active { 
+    transform: translate(2px, 2px); 
+    box-shadow: 2px 2px 0px var(--color-asphalt); 
+}
+
+/* --- 11. Clima / Previsão do Tempo (Novo) --- */
+.weather-placeholder {
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 6px 0;
+    transition: opacity 0.3s;
+}
+
+/* Estilo quando é SOL */
+.weather-placeholder.clima-sol i {
+    color: #FF8C00; /* Laranja Sol */
+    filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.2));
+}
+
+/* Estilo quando é CHUVA */
+.weather-placeholder.clima-chuva i {
+    color: #4A90E2; /* Azul Chuva */
+}
+
+.weather-placeholder span {
+    color: var(--color-asphalt);
+    font-family: var(--font-body);
+}
+
+/* ==========================================================================
+   CHECK-IN & GAMIFICAÇÃO (Novos Estilos)
+   Botões de presença e cards de estatísticas
+   ========================================================================== */
+
+/* Botão de Check-in na tela de detalhes */
+.btn-checkin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 16px;
+    margin-top: 16px;
+    
+    background-color: var(--color-surface);
+    color: var(--color-text-light);
+    border: 2px dashed var(--color-concrete); /* Tracejado quando não marcado */
+    border-radius: var(--radius-md);
+    
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Estado "Eu Fui!" (Marcado) */
+.btn-checkin.checked {
+    background-color: var(--color-success); /* Verde Sucesso */
+    color: #FFF;
+    border: 2px solid var(--color-asphalt); /* Borda sólida */
+    box-shadow: 4px 4px 0px var(--color-asphalt);
+    transform: scale(1.02);
+}
+
+.btn-checkin.checked i {
+    animation: checkPop 0.3s ease-out;
+}
+
+@keyframes checkPop {
+    0% { transform: scale(0); }
+    80% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+}
+
+/* Placar de Sobrevivência (Gamificação) */
+.stats-card {
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-asphalt);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow-sm);
+}
+
+.stats-info h3 {
+    font-size: 1rem;
+    margin-bottom: 4px;
+    color: var(--color-text-light);
+}
+
+.stats-count {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    line-height: 1;
+    color: var(--color-primary);
+}
+
+.stats-icon {
+    font-size: 2.5rem;
+    color: var(--color-cta); /* Amarelo */
+    text-shadow: 2px 2px 0px var(--color-asphalt);
+    transform: rotate(10deg);
+}
+
+/* ==========================================================================
+   INSTALAÇÃO PWA (Botão Customizado)
+   ========================================================================== */
+
+.btn-install {
+    width: 100%;
+    padding: 16px;
+    background-color: var(--color-cta); /* Amarelo Lagoinha */
+    color: var(--color-cta-text);
+    border: var(--border-width) solid var(--color-asphalt);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-hard);
+    
+    font-family: var(--font-display); /* Anton */
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: all 0.1s;
+    
+    /* Animação leve para chamar atenção */
+    animation: pulseInstall 2s infinite;
+}
+
+.btn-install:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px var(--color-asphalt);
+    animation: none;
+}
+
+.btn-install i {
+    font-size: 1.4rem;
+}
+
+@keyframes pulseInstall {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+/* Ajuste para o texto explicativo abaixo do botão */
+#install-container p {
+    font-family: var(--font-body);
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   FILTROS AVANÇADOS (Novo)
+   Painel expansível e chips de filtro para Dia/Turno
+   ========================================================================== */
+
+.filters-panel {
+    background-color: var(--color-bg);
+    border-bottom: 2px solid var(--color-asphalt);
+    padding: 16px;
+    margin-bottom: 20px;
+    animation: slideDownPanel 0.2s ease-out;
+}
+
+@keyframes slideDownPanel {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.filter-group {
+    margin-bottom: 16px;
+}
+
+.filter-label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--color-asphalt);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.filter-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    /* Esconde scrollbar visualmente mas mantém funcional */
+    scrollbar-width: none; 
+}
+.filter-row::-webkit-scrollbar { display: none; }
+
+/* Ajuste nos Chips para funcionarem nos novos grupos */
+.filter-chip {
+    flex: 0 0 auto; /* Não encolher */
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border: 2px solid var(--color-asphalt);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.1s;
+}
+
+.filter-chip.active {
+    background-color: var(--color-primary); /* Vermelho Neon */
+    color: #FFF;
+    box-shadow: 3px 3px 0px var(--color-asphalt);
+    transform: translate(-1px, -1px);
+}
+
+/* ==========================================================================
+   13. INDICADOR OFFLINE (Aviso de "Sem Internet")
+   ========================================================================== */
+
+.offline-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 40px; /* Altura fixa */
+    
+    background-color: var(--color-asphalt); /* Fundo Preto/Cinza Escuro */
+    color: var(--color-cta); /* Texto Amarelo Neon */
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    
+    font-family: var(--font-body);
+    font-weight: 800;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    
+    z-index: 9999; /* Acima de tudo, inclusive do Header */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    
+    /* Animação suave de entrada */
+    transition: transform 0.3s ease-in-out;
+}
+
+/* Quando estiver oculto (view-hidden via JS) */
+.offline-banner.view-hidden {
+    transform: translateY(-100%);
+    display: flex !important; /* Sobrescreve o display:none global para permitir animação */
+    visibility: hidden;
+}
+
+/* ==========================================================================
+   PERFIL DO DESENVOLVEDOR (Créditos)
+   ========================================================================== */
+
+.dev-profile {
+    background-color: var(--color-surface);
+    border: var(--border-width) solid var(--color-asphalt);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-hard);
+    padding: 24px;
+    margin-bottom: 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden; /* Para a faixa decorativa não vazar */
+}
+
+/* Faixa decorativa no topo (Efeito Faixa de Obra/Polícia) */
+.dev-profile::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    background: repeating-linear-gradient(
+        45deg,
+        var(--color-primary),
+        var(--color-primary) 15px,
+        var(--color-cta) 15px,
+        var(--color-cta) 30px
+    );
+    border-bottom: 2px solid var(--color-asphalt);
+}
+
+.dev-avatar img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid var(--color-asphalt);
+    margin: 12px auto 12px auto; /* Ajuste para não colar na faixa */
+    object-fit: cover;
+    box-shadow: 4px 4px 0px var(--color-cta); /* Sombra Amarela */
+    background-color: var(--color-bg);
+}
+
+.dev-info h3 {
+    font-size: 1.3rem;
+    color: var(--color-asphalt);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    font-family: var(--font-display); /* Anton */
+}
+
+.dev-info h3 .highlight {
+    background-color: var(--color-cta);
+    padding: 2px 6px;
+    border: 1px solid var(--color-asphalt);
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+    transform: rotate(-1deg);
+    display: inline-block;
+}
+
+.dev-info p {
+    font-size: 0.9rem;
+    color: var(--color-text-light);
+    margin-bottom: 4px;
+    font-weight: 700;
+}
+
+.dev-bio {
+    font-family: var(--font-script); /* Permanent Marker */
+    color: var(--color-purple-night) !important;
+    font-size: 1.1rem !important;
+    transform: rotate(-2deg);
+    margin: 12px 0 20px 0 !important;
+}
+
+.dev-links {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-social {
+    background-color: var(--color-bg);
+    border: 2px solid var(--color-asphalt);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: var(--color-asphalt);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.1s;
+    box-shadow: 2px 2px 0px var(--color-asphalt);
+    text-decoration: none;
+}
+
+.btn-social:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0px 0px 0px var(--color-asphalt);
+}
+
+.btn-social i {
+    font-size: 1.1rem;
+}
+
+/* Cores específicas no hover (Opcional) */
+.btn-social:hover { background-color: #fff; }
+.btn-social:hover .fa-github { color: #333; }
+.btn-social:hover .fa-linkedin { color: #0077b5; }
+.btn-social:hover .fa-instagram { color: #E1306C; }

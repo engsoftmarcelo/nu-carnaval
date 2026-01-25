@@ -1,0 +1,148 @@
+/* ==========================================================================
+   css/map.css
+   Estilização específica do mapa Leaflet e componentes geoespaciais
+   Baseado na Seção 5 do Relatório (Leaflet + UX Mobile)
+   ========================================================================== */
+
+/* 1. Container do Mapa 
+   O Leaflet exige uma altura definida para renderizar.
+   Calculamos a altura para preencher a tela descontando Header e Nav.
+   Header (~80px) + Nav (~70px) + Padding extra
+*/
+#mapa-container {
+    width: 100%;
+    /* Garante que o mapa ocupe toda a área visível disponível */
+    height: calc(100vh - 160px); 
+    border-radius: 16px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+    background-color: #E0E0E0; /* Cor de fundo enquanto carrega os tiles */
+    z-index: 1;
+}
+
+/* 2. Botão Flutuante (FAB) "Perto de Mim" (Seção 5.4 e 2.1)
+   Posicionado na parte inferior direita, mas acima da Barra de Navegação.
+   Deve estar na "Zona do Polegar" fácil de alcançar.
+*/
+.fab-geo {
+    position: fixed;
+    bottom: 90px; /* 70px da Nav + 20px de margem */
+    right: 20px;
+    width: 60px; /* Tamanho 60x60 conforme Lei de Fitts (Seção 2.1)  */
+    height: 60px;
+    border-radius: 50%;
+    background-color: var(--color-cta, #FFD700); /* Amarelo Ouro (Seção 2.3) */
+    color: var(--color-primary, #8A2BE2); /* Ícone Roxo para contraste */
+    border: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 999; /* Acima do mapa */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.fab-geo:active {
+    transform: scale(0.9);
+    background-color: #FFC107;
+}
+
+/* Animação de "pulso" ao buscar localização */
+.fab-geo.searching {
+    animation: pulse-ring 2s infinite;
+}
+
+@keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+/* 3. Customização dos Popups do Leaflet (Seção 5.3) 
+   Para manter a identidade visual "Roxo e Montserrat" dentro do mapa.
+*/
+.leaflet-popup-content-wrapper {
+    border-radius: 12px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.2);
+}
+
+.leaflet-popup-content {
+    margin: 0;
+    padding: 12px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+/* Título dentro do Popup (Nome do Bloco) */
+.leaflet-popup-content h3 {
+    margin: 0 0 4px 0;
+    color: var(--color-primary, #8A2BE2);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.leaflet-popup-content p {
+    margin: 0;
+    color: #666;
+}
+
+/* Botão de fechar do popup */
+.leaflet-container a.leaflet-popup-close-button {
+    color: #999;
+    padding: 4px; /* Aumenta área de toque */
+    font-size: 1.2rem;
+}
+
+/* 4. Clusters de Marcadores (Seção 5.2)
+   Estilização das "bolinhas" que agrupam blocos próximos.
+   Requer plugin Leaflet.markercluster, mas definimos o estilo base aqui.
+*/
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+    background-color: rgba(138, 43, 226, 0.6); /* Roxo translúcido */
+}
+
+.marker-cluster div {
+    background-color: var(--color-primary, #8A2BE2);
+    color: #FFF;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: bold;
+    border-radius: 50%;
+}
+
+/* 5. Ajustes de Controles do Leaflet para Mobile 
+   Move o zoom para não conflitar com o Header 
+*/
+.leaflet-top {
+    top: 10px; /* Pequeno ajuste */
+}
+.leaflet-touch .leaflet-control-zoom-in, 
+.leaflet-touch .leaflet-control-zoom-out {
+    width: 40px;
+    height: 40px;
+    line-height: 40px; /* Aumenta área de toque dos botões de zoom */
+}
+
+/* Customização do Layer Control do Leaflet */
+.leaflet-control-layers {
+    border: 2px solid #1A1A1A !important;
+    border-radius: 8px !important;
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.2) !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-weight: 700;
+}
+
+.leaflet-control-layers-toggle {
+    background-image: url('images/layers.png'); /* O Leaflet usa padrão, mas o estilo acima já dá o toque */
+}
+
+.leaflet-control-layers-expanded {
+    padding: 10px !important;
+    background: #FFF !important;
+}

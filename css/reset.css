@@ -1,0 +1,84 @@
+/* ==========================================================================
+   css/reset.css
+   Reset Moderno para Mobile-First PWA
+   Remove inconsistências entre navegadores e prepara para layout responsivo.
+   ========================================================================== */
+
+/* 1. Box Sizing Global
+   Fundamental para cálculos de largura responsiva. 
+   Garante que padding e borda não aumentem a largura total do elemento.
+   Essencial para o Grid de Cards funcionar corretamente (Seção 4.2).
+*/
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* 2. Configurações de HTML e Body
+   Garante altura total para o app (necessário para o mapa e footer fixo).
+*/
+html, body {
+    height: 100%;
+    width: 100%;
+    -webkit-font-smoothing: antialiased; /* Texto mais nítido em telas Retina/iOS */
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth; /* Rolagem suave nativa */
+}
+
+/* 3. Imagens e Mídia Responsiva
+   Evita que imagens "quebrem" o layout em telas pequenas.
+*/
+img, picture, video, canvas, svg {
+    display: block;
+    max-width: 100%;
+}
+
+/* 4. Tipografia e Formulários
+   Faz inputs e botões herdarem a fonte do body (Roboto/Open Sans) 
+   em vez de usar a fonte feia padrão do sistema.
+*/
+input, button, textarea, select {
+    font: inherit;
+    border: none;
+    background: none;
+}
+
+/* Remove o contorno azul padrão feio ao clicar (focaremos com estilo próprio no styles.css) */
+input:focus, button:focus {
+    outline: none;
+}
+
+/* 5. Listas e Links
+   Remove as "bolinhas" das listas e o sublinhado dos links por padrão.
+*/
+ul, ol {
+    list-style: none;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* 6. Tags Semânticas HTML5 (Seção 4.2)
+   Garante que tags novas se comportem como blocos em todos os navegadores.
+*/
+article, aside, footer, header, nav, section, main {
+    display: block;
+}
+
+/* 7. Acessibilidade (Ocultar visualmente mas manter para leitores de tela) */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}

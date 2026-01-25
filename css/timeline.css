@@ -1,0 +1,94 @@
+/* ==========================================================================
+   TIMELINE & MEUS TRENS (Novo)
+   ========================================================================== */
+
+/* Container da Timeline */
+.timeline-container {
+    position: relative;
+    padding: 20px 0;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Linha Vertical Conectora */
+.timeline-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 20px; /* Alinhado com os bullets */
+    width: 4px;
+    background: var(--color-asphalt);
+    z-index: 0;
+}
+
+/* Grupo de Dias (Cabeçalho "Sábado - 31/01") */
+.timeline-day-group {
+    position: relative;
+    margin-bottom: 40px;
+    z-index: 1;
+}
+
+.timeline-date-header {
+    background-color: var(--color-cta); /* Amarelo */
+    color: var(--color-asphalt);
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    padding: 8px 16px;
+    border: 2px solid var(--color-asphalt);
+    box-shadow: 4px 4px 0px var(--color-asphalt);
+    display: inline-block;
+    margin-bottom: 20px;
+    transform: rotate(-2deg); /* Estilo "Adesivo" */
+    margin-left: 10px;
+}
+
+/* Item da Timeline (O Card dentro da linha) */
+.timeline-item {
+    position: relative;
+    margin-left: 50px; /* Espaço para a linha à esquerda */
+    margin-bottom: 20px;
+}
+
+/* A "Bolinha" da Timeline */
+.timeline-marker {
+    position: absolute;
+    left: -39px; /* Ajuste fino para centralizar na linha */
+    top: 20px;
+    width: 18px;
+    height: 18px;
+    background-color: var(--color-bg);
+    border: 3px solid var(--color-asphalt);
+    border-radius: 50%;
+    z-index: 2;
+}
+
+.timeline-item.conflict .timeline-marker {
+    background-color: var(--color-error); /* Vermelho se tiver conflito */
+}
+
+/* Alerta de Conflito */
+.conflict-alert {
+    background-color: var(--color-error);
+    color: white;
+    font-family: var(--font-body);
+    font-weight: bold;
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 2px solid var(--color-asphalt);
+    margin-left: 50px;
+    margin-bottom: -10px; /* Cola no card de baixo */
+    position: relative;
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
