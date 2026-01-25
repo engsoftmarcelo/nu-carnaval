@@ -976,3 +976,46 @@ h1, h2, h3 {
 .btn-social:hover .fa-github { color: #333; }
 .btn-social:hover .fa-linkedin { color: #0077b5; }
 .btn-social:hover .fa-instagram { color: #E1306C; }
+
+/* ==========================================================================
+   AVISO DE PROGRAMAÇÃO (Alerta de Pré-Carnaval)
+   ========================================================================== */
+.aviso-programacao {
+    background-color: var(--color-cta); /* Amarelo Neon */
+    color: var(--color-asphalt);        /* Preto */
+    border: var(--border-width) solid var(--color-asphalt);
+    border-radius: var(--radius-sm);
+    
+    padding: 16px;
+    margin-bottom: 20px; /* Espaço antes da lista */
+    
+    display: flex;
+    align-items: flex-start; /* Alinha ícone no topo se o texto quebrar */
+    gap: 12px;
+    
+    box-shadow: var(--shadow-hard); /* Sombra dura deslocada */
+    transform: rotate(-1deg);       /* Leve inclinação estilo "adesivo colado" */
+    transition: transform 0.2s;
+}
+
+.aviso-programacao:active {
+    transform: rotate(0deg) scale(0.98);
+}
+
+.aviso-programacao i {
+    font-size: 1.4rem;
+    margin-top: 2px;
+    color: var(--color-primary); /* Vermelho no ícone para destaque extra */
+}
+
+.aviso-programacao p {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.aviso-programacao strong {
+    font-weight: 800;
+    text-transform: uppercase;
+}
