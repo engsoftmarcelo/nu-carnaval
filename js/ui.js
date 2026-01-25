@@ -1,15 +1,14 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - VERSÃO COMPLETA (Com Gamificação)
-   Inclui: Cards, Detalhes, Clima, Timeline e Stats de Sobrevivência.
+   Camada de Interface - VERSÃO CORRIGIDA (Rota GPS -> Concentração)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn } from './storage.js';
 import { getPrevisaoTempo } from './weather.js';
+import { renderDetalheMap } from './map.js'; 
 
 /**
  * Renderiza a lista de blocos padrão (Grid de Cards).
- * Usado na tela "Explorar".
  */
 export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
     const container = document.getElementById(containerId);
@@ -32,9 +31,7 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
         const article = document.createElement('article');
         article.className = 'bloco-card';
         
-        // EVENTO DE CLIQUE PARA ABRIR DETALHES
         article.onclick = (e) => {
-            // Se clicou no coração, não abre detalhes
             if (e.target.closest('.fav-btn')) return;
             mostrarDetalhes(bloco);
         };
@@ -56,10 +53,7 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
             </div>
             <div class="card-body">
                 ${statusHTML}
-                
-                <div class="card-info weather-placeholder" id="weather-${bloco.id}">
-                    </div>
-
+                <div class="card-info weather-placeholder" id="weather-${bloco.id}"></div>
                 <div class="card-info"><i class="fas fa-map-marker-alt"></i><span>${bairro}</span></div>
                 <div class="card-tags">${estilosTags}</div>
             </div>
@@ -69,17 +63,13 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
     });
 
     container.appendChild(fragment);
-
-    // Hidrata os dados de clima após renderizar
     atualizarClimaDosCards(listaBlocos);
 }
 
-// --- Função auxiliar para atualizar o clima nos cards ---
 async function atualizarClimaDosCards(blocos) {
     for (const bloco of blocos) {
         if (bloco.lat && bloco.lng && bloco.date) {
             const clima = await getPrevisaoTempo(bloco.lat, bloco.lng, bloco.date);
-            
             if (clima) {
                 const el = document.getElementById(`weather-${bloco.id}`);
                 if (el) {
@@ -95,18 +85,30 @@ async function atualizarClimaDosCards(blocos) {
 }
 
 /**
- * Exibe a tela de detalhes de um bloco específico.
- * Agora inclui o botão de Check-in ("Eu fui!").
+ * Exibe a tela de detalhes.
+ * CORREÇÃO: Link do Google Maps agora traça rota "Minha Localização -> Bloco".
  */
 export function mostrarDetalhes(bloco) {
     const container = document.getElementById('detalhes-conteudo');
     const estilos = Array.isArray(bloco.musical_style) ? bloco.musical_style.join(', ') : 'Diversos';
     
-    // Verifica estado do check-in
+    // Check-in logic
     const jaFui = isCheckedIn(bloco.id);
     const checkinClass = jaFui ? 'checked' : '';
     const checkinText = jaFui ? 'Fui e sobrevivi!' : 'Marcar presença ("Eu fui!")';
     const checkinIcon = jaFui ? 'fas fa-check-circle' : 'far fa-circle';
+
+    // --- CORREÇÃO DO LINK DO MAPA ---
+    let mapsUrl;
+    if (bloco.lat && bloco.lng) {
+        // Usa a API universal "dir" (Directions). 
+        // Sem o parâmetro "origin", ele assume a localização atual do GPS.
+        mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${bloco.lat},${bloco.lng}&travelmode=walking`;
+    } else {
+        // Fallback para busca textual se não tiver coordenadas
+        const query = encodeURIComponent((bloco.location || bloco.name) + " Belo Horizonte");
+        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+    }
 
     container.innerHTML = `
         <div class="detalhe-hero">
@@ -130,19 +132,38 @@ export function mostrarDetalhes(bloco) {
         </div>
 
         <div class="utility-card">
-            <h3><i class="fas fa-map-marked-alt"></i> Onde é?</h3>
-            <p style="font-size: 1.1rem; margin-top: 8px;"><strong>${bloco.location || 'Local a confirmar'}</strong></p>
-            <p style="color: #666; margin-top: 4px;">${bloco.neighborhood || 'Belo Horizonte'}</p>
+            <h3><i class="fas fa-map-signs"></i> Trajeto</h3>
             
-            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((bloco.location || bloco.neighborhood) + ' Belo Horizonte')}" 
-               target="_blank" class="detalhe-mapa-btn">
-               <i class="fas fa-location-arrow"></i> Ver no Google Maps
+            <div id="detalhe-mapa-interno" style="height: 250px; width: 100%; border-radius: 8px; border: 2px solid #1A1A1A; margin-top: 10px; z-index: 1; background-color: #e0e0e0;"></div>
+            
+            <div style="display:flex; justify-content:space-between; margin-top:12px; font-size:0.85rem; font-weight:700; color:#1A1A1A;">
+                 <span style="display:flex; align-items:center; gap:6px;">
+                    <div style="width:12px; height:12px; background:#00C853; border-radius:50%; border:2px solid #1A1A1A;"></div> 
+                    Concentração
+                 </span>
+                 <span style="display:flex; align-items:center; gap:6px;">
+                    <div style="width:12px; height:12px; background:#FF2A00; border-radius:50%; border:2px solid #1A1A1A;"></div> 
+                    Dispersão
+                 </span>
+            </div>
+            
+            <div style="margin-top: 16px; border-top: 1px dashed #ccc; padding-top: 12px;">
+                <p style="font-size: 0.9rem; margin-bottom:4px;"><strong>Início:</strong> ${bloco.location}</p>
+                ${bloco.locationEnd ? `<p style="font-size: 0.9rem;"><strong>Fim:</strong> ${bloco.locationEnd}</p>` : ''}
+            </div>
+
+            <a href="${mapsUrl}" target="_blank" class="detalhe-mapa-btn">
+               <i class="fas fa-location-arrow"></i> Como chegar (GPS)
             </a>
         </div>
         
         <div style="height: 100px;"></div>`;
 
     mudarVisualizacao('view-detalhes');
+
+    setTimeout(() => {
+        renderDetalheMap(bloco);
+    }, 100);
 }
 
 export function mudarVisualizacao(viewId) {
@@ -230,10 +251,6 @@ function getStatusHTML(bloco) {
     }
 }
 
-/* ==========================================================================
-   TIMELINE DE FAVORITOS
-   Agrupa blocos por dia e detecta conflitos.
-   ========================================================================== */
 export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
     const container = document.getElementById(containerId);
     container.innerHTML = ''; 
@@ -249,52 +266,36 @@ export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
         return;
     }
 
-    // 1. Agrupar blocos por DATA
     const gruposPorData = {};
     listaBlocos.forEach(bloco => {
-        if (!gruposPorData[bloco.date]) {
-            gruposPorData[bloco.date] = [];
-        }
+        if (!gruposPorData[bloco.date]) gruposPorData[bloco.date] = [];
         gruposPorData[bloco.date].push(bloco);
     });
 
-    // 2. Ordenar as chaves de data
     const datasOrdenadas = Object.keys(gruposPorData).sort();
-
-    // Container Principal da Timeline
     const timelineWrapper = document.createElement('div');
     timelineWrapper.className = 'timeline-container';
 
-    // 3. Iterar por cada Dia
     datasOrdenadas.forEach(data => {
         const blocosDoDia = gruposPorData[data];
-        
-        // Ordena por horário dentro do dia
         blocosDoDia.sort((a, b) => a.time.localeCompare(b.time));
 
-        // Cria o Grupo Visual do Dia
         const dayGroup = document.createElement('div');
         dayGroup.className = 'timeline-day-group';
-
-        // Formata data (2026-01-31 -> 31/01 - Sábado)
         const dateObj = new Date(data + 'T12:00:00'); 
         const diaFormatado = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', weekday: 'long' });
-        
         dayGroup.innerHTML = `<div class="timeline-date-header">${diaFormatado}</div>`;
 
-        // 4. Iterar pelos Blocos para gerar Cards e Conflitos
-        let ultimoHorarioFim = -1; // Minutos
+        let ultimoHorarioFim = -1;
 
         blocosDoDia.forEach((bloco, index) => {
             const [hora, min] = bloco.time.split(':').map(Number);
             const inicioMinutos = hora * 60 + min;
-            const duracaoEstimada = 240; // 4 horas
+            const duracaoEstimada = 240; 
             const fimMinutos = inicioMinutos + duracaoEstimada;
 
-            // Lógica de Conflito: Começa antes do anterior terminar (com 30min tolerância)
             const temConflito = index > 0 && inicioMinutos < (ultimoHorarioFim - 30);
 
-            // Se tiver conflito, insere o alerta
             if (temConflito) {
                 const alertDiv = document.createElement('div');
                 alertDiv.className = 'conflict-alert';
@@ -302,16 +303,10 @@ export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
                 dayGroup.appendChild(alertDiv);
             }
 
-            // Item da Timeline
             const itemDiv = document.createElement('div');
             itemDiv.className = `timeline-item ${temConflito ? 'conflict' : ''}`;
-            
             itemDiv.innerHTML = `<div class="timeline-marker"></div>`;
-            
-            // Cria e anexa o card
-            const cardArticle = criarCardTimeline(bloco);
-            itemDiv.appendChild(cardArticle);
-
+            itemDiv.appendChild(criarCardTimeline(bloco));
             dayGroup.appendChild(itemDiv);
 
             ultimoHorarioFim = fimMinutos;
@@ -323,11 +318,9 @@ export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
     container.appendChild(timelineWrapper);
 }
 
-// Função auxiliar interna para criar o Card da Timeline
 function criarCardTimeline(bloco) {
     const article = document.createElement('article');
     article.className = 'bloco-card';
-    
     article.onclick = (e) => {
         if (e.target.closest('.fav-btn')) return;
         mostrarDetalhes(bloco); 
@@ -353,21 +346,15 @@ function criarCardTimeline(bloco) {
     return article;
 }
 
-/* ==========================================================================
-   STATS DE SOBREVIVÊNCIA (NOVO)
-   Exibe o card de gamificação na aba Meus Trens.
-   ========================================================================== */
 export function renderStats(count, containerId = 'stats-container') {
     const container = document.getElementById(containerId);
     if(!container) return;
 
-    // Se não tiver nenhum check-in, podemos ocultar ou mostrar estado zero
     if (count === 0) {
         container.innerHTML = '';
         return;
     }
 
-    // Títulos de Nível
     let titulo = "Iniciante";
     if (count > 0) titulo = "Folião";
     if (count > 5) titulo = "Guerreiro(a)";

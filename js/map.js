@@ -1,12 +1,15 @@
 /* ==========================================================================
    js/map.js
    Lógica Geoespacial (Leaflet.js)
-   Estilo: Cores por Dia + Legenda + Popups Interativos
+   Estilo: Cores por Dia + Legenda + Popups Interativos + Mapa de Trajeto
    ========================================================================== */
 
 let map = null;
 let markersLayer = null; 
 let userMarker = null;
+
+// Variável para controlar a instância do mapa de detalhes (evita erros de re-inicialização)
+let miniMap = null;
 
 // Camadas de Utilidade
 let metroLayer = null;
@@ -70,7 +73,7 @@ const criarIconeUtilidade = (tipo) => {
     });
 };
 
-// --- FUNÇÃO DE INICIALIZAÇÃO ---
+// --- FUNÇÃO DE INICIALIZAÇÃO DO MAPA PRINCIPAL ---
 export function initMap(blocos) {
     const container = document.getElementById('mapa-container');
     if (!container) return;
@@ -169,14 +172,16 @@ export function atualizarMarcadores(blocosFiltrados) {
 
     blocosFiltrados.forEach(bloco => {
         const temPonto = bloco.lat && bloco.lng;
-        const temRota = bloco.route && Array.isArray(bloco.route) && bloco.route.length > 0;
-
-        if (temRota || temPonto) {
+        // Verifica se tem rota predefinida OU rota calculada (lat/lng -> latDisp/lngDisp)
+        // No seu data.js atual, 'route' não está sendo gerado explicitamente, mas se você tiver, a lógica abaixo funciona.
+        // O foco aqui é mostrar o marcador principal.
+        
+        if (temPonto) {
             // --- 3. LÓGICA DE COR POR DATA ---
             const corNeon = DATE_COLORS[bloco.date] || DATE_COLORS['default'];
 
             // Conteúdo do Popup
-            // NOTA: O botão agora chama 'window.abrirDetalhesDoMapa' definido no app.js
+            // NOTA: O botão chama 'window.abrirDetalhesDoMapa' definido no app.js
             const popupContent = `
                 <div class="map-popup">
                     <h3>${bloco.name}</h3>
@@ -198,15 +203,8 @@ export function atualizarMarcadores(blocosFiltrados) {
                 fillOpacity: 1
             };
 
-            // Desenha Rota ou Ponto
-            if (temRota) {
-                // Se tiver rota, desenha a linha grossa e a bolinha no início
-                L.polyline(bloco.route, { color: corNeon, weight: 5 }).bindPopup(popupContent).addTo(markersLayer);
-                L.circleMarker(bloco.route[0], markerOptions).bindPopup(popupContent).addTo(markersLayer);
-            } else if (temPonto) {
-                // Se só tiver ponto, desenha a bolinha
-                L.circleMarker([bloco.lat, bloco.lng], markerOptions).bindPopup(popupContent).addTo(markersLayer);
-            }
+            // Desenha a bolinha
+            L.circleMarker([bloco.lat, bloco.lng], markerOptions).bindPopup(popupContent).addTo(markersLayer);
         }
     });
 }
@@ -253,4 +251,102 @@ function setupGeoButton() {
             { enableHighAccuracy: true, timeout: 10000 }
         );
     });
+}
+
+/* ==========================================================================
+   NOVO: MAPA DE DETALHES (TRAJETO)
+   Renderiza o mini-mapa dentro da tela de detalhes do bloco
+   ========================================================================== */
+export function renderDetalheMap(bloco) {
+    const containerId = 'detalhe-mapa-interno';
+    const container = document.getElementById(containerId);
+
+    if (!container) return;
+
+    // 1. Limpa mapa anterior se existir (Importante para evitar erro do Leaflet: "Map container is already initialized")
+    if (miniMap) {
+        miniMap.remove();
+        miniMap = null;
+    }
+
+    // 2. Verifica coordenadas
+    const temConcentracao = bloco.lat && bloco.lng;
+    const temDispersao = bloco.latDisp && bloco.lngDisp;
+
+    if (!temConcentracao && !temDispersao) {
+        container.innerHTML = '<div style="height:100%; display:flex; align-items:center; justify-content:center; background:#eee; color:#666; font-weight:bold;">Mapa do trajeto indisponível</div>';
+        return;
+    }
+
+    // 3. Inicializa Mapa
+    // Centraliza na concentração ou dispersão inicialmente
+    const center = temConcentracao ? [bloco.lat, bloco.lng] : [bloco.latDisp, bloco.lngDisp];
+    
+    miniMap = L.map(containerId, {
+        zoomControl: false, // Visual limpo
+        attributionControl: false, // Oculta atribuição para economizar espaço no card
+        dragging: true,
+        scrollWheelZoom: false // Evita scroll da página travar no mapa
+    }).setView(center, 15);
+
+    // Tiles (CartoDB Voyager)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19
+    }).addTo(miniMap);
+
+    const bounds = L.latLngBounds();
+
+    // 4. Marcador de Concentração (Verde)
+    if (temConcentracao) {
+        const iconStart = L.divIcon({
+            className: 'custom-pin',
+            html: '<div style="background-color:#00C853; width:16px; height:16px; border-radius:50%; border:3px solid #1A1A1A; box-shadow: 2px 2px 0px rgba(0,0,0,0.2);"></div>',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10], // Centraliza
+            popupAnchor: [0, -10]
+        });
+
+        L.marker([bloco.lat, bloco.lng], { icon: iconStart })
+            .addTo(miniMap)
+            .bindPopup(`<b>Concentração</b><br>${bloco.location}`);
+        
+        bounds.extend([bloco.lat, bloco.lng]);
+    }
+
+    // 5. Marcador de Dispersão (Vermelho)
+    if (temDispersao) {
+        const iconEnd = L.divIcon({
+            className: 'custom-pin',
+            html: '<div style="background-color:#FF2A00; width:16px; height:16px; border-radius:50%; border:3px solid #1A1A1A; box-shadow: 2px 2px 0px rgba(0,0,0,0.2);"></div>',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+            popupAnchor: [0, -10]
+        });
+
+        L.marker([bloco.latDisp, bloco.lngDisp], { icon: iconEnd })
+            .addTo(miniMap)
+            .bindPopup(`<b>Dispersão</b><br>${bloco.locationEnd || 'Fim do trajeto'}`);
+        
+        bounds.extend([bloco.latDisp, bloco.lngDisp]);
+    }
+
+    // 6. Desenha Linha do Trajeto (Se tiver os dois pontos)
+    if (temConcentracao && temDispersao) {
+        L.polyline([[bloco.lat, bloco.lng], [bloco.latDisp, bloco.lngDisp]], {
+            color: '#1A1A1A',
+            weight: 4,
+            dashArray: '10, 10', // Linha tracejada estilosa
+            opacity: 0.8
+        }).addTo(miniMap);
+    }
+
+    // 7. Ajusta Zoom para caber tudo com margem
+    if (temConcentracao || temDispersao) {
+        // Se for só um ponto, mantém zoom 15, se forem dois, ajusta bounds
+        if (temConcentracao && temDispersao) {
+            miniMap.fitBounds(bounds, { padding: [40, 40] });
+        } else {
+            miniMap.setView(center, 15);
+        }
+    }
 }
