@@ -1,5 +1,5 @@
 /* ==========================================================================
-   js/firebase.js - VERSÃO COMPLETA (Auth + Sync + Push + Vibe Check)
+   js/firebase.js - VERSÃO COMPLETA (Com Correção de Índice)
    Projeto: nu-carnaval-2026-e9c3b
    SDK: v12.8.0
    ========================================================================== */
@@ -204,7 +204,7 @@ export async function salvarTokenPush(subscription) {
 }
 
 // ==========================================================================
-// 3. VIBE CHECK (Real-Time Feed) [NOVO]
+// 3. VIBE CHECK (Real-Time Feed) [COM CORREÇÃO DE ERRO]
 // ==========================================================================
 
 /**
@@ -236,6 +236,7 @@ export async function enviarVibe(blocoId, tipo) {
 
 /**
  * Monitora a vibe de um bloco nos últimos 30 minutos.
+ * AGORA COM TRATAMENTO PARA FALTA DE ÍNDICE
  * @param {string} blocoId 
  * @param {function} callback - Recebe objeto { score, total, temPolicia, statusTexto }
  * @returns {function} unsubscribe - Função para parar de ouvir
@@ -254,29 +255,55 @@ export function monitorarVibe(blocoId, callback) {
         orderBy("timestamp", "desc")
     );
 
-    // Escuta em tempo real
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        let score = 0; // Termômetro (-10 a +10)
-        let total = 0;
-        let temPolicia = false;
+    // Escuta em tempo real COM callback de erro
+    const unsubscribe = onSnapshot(q, 
+        (snapshot) => {
+            let score = 0; // Termômetro (-10 a +10)
+            let total = 0;
+            let temPolicia = false;
 
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            total++;
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                total++;
+                
+                if (data.tipo === 'fogo') score += 1;
+                if (data.tipo === 'morto') score -= 1;
+                if (data.tipo === 'policia') temPolicia = true;
+            });
+
+            // Lógica do Status Texto
+            let statusTexto = "Morno";
+            if (score > 5) statusTexto = "PEGANDO FOGO 🔥";
+            else if (score < -2) statusTexto = "Morgado 💀";
+            else if (total === 0) statusTexto = "Sem dados";
+
+            callback({ score, total, temPolicia, statusTexto });
+        },
+        (error) => {
+            // AQUI ESTÁ A CORREÇÃO: Tratamento de erro do índice
+            console.error("❌ Erro no Vibe Check:", error);
             
-            if (data.tipo === 'fogo') score += 1;
-            if (data.tipo === 'morto') score -= 1;
-            if (data.tipo === 'policia') temPolicia = true;
-        });
-
-        // Lógica do Status Texto
-        let statusTexto = "Morno";
-        if (score > 5) statusTexto = "PEGANDO FOGO 🔥";
-        else if (score < -2) statusTexto = "Morgado 💀";
-        else if (total === 0) statusTexto = "Sem dados";
-
-        callback({ score, total, temPolicia, statusTexto });
-    });
+            if (error.code === 'failed-precondition') {
+                const msg = "⚠️ FALTA O ÍNDICE! Verifique o link no console (F12).";
+                console.warn(msg);
+                
+                // Retorna um estado de erro para a UI não ficar travada
+                callback({ 
+                    score: 0, 
+                    total: 0, 
+                    temPolicia: false, 
+                    statusTexto: "ERRO DE ÍNDICE (F12)" 
+                });
+            } else {
+                callback({ 
+                    score: 0, 
+                    total: 0, 
+                    temPolicia: false, 
+                    statusTexto: "Erro de Conexão" 
+                });
+            }
+        }
+    );
 
     return unsubscribe;
 }
