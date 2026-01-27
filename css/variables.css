@@ -8,100 +8,85 @@
 :root {
     /* --- 1. Paleta de Cores: "Minas Neon" --- */
     
-    /* Vermelho Inconfidência (Neon): 
-       A cor primária. Vibra na tela. Usada em botões principais, logos e urgência. */
+    /* Vermelho Inconfidência (Neon) */
     --color-primary: #FF2A00; 
-    --color-primary-dark: #D62300; /* Variação levemente mais escura para interações */
+    --color-primary-dark: #D62300;
 
-    /* Amarelo Lagoinha (Marca-texto): 
-       Energia solar e sinalização urbana. Usada para CTAs (Call to Action) e destaques. */
+    /* Amarelo Lagoinha (Marca-texto) */
     --color-cta: #CCFF00; 
-    --color-cta-text: #1A1A1A; /* Contraste necessário (preto) sobre o amarelo */
+    --color-cta-text: #000000; /* FIXO: Preto puro para contraste máximo no amarelo */
 
-    /* Branco Papel (Lambe-Lambe): 
-       Não é branco clínico (#FFF). É um off-white que simula papel de cartaz ou jornal. */
+    /* Branco Papel (Lambe-Lambe) */
     --color-bg: #F0F0EB; 
 
-    /* Superfície: 
-       Branco puro apenas para áreas de leitura limpa (dentro de cards). */
+    /* Superfície */
     --color-surface: #FFFFFF; 
     
-    /* Preto Asfalto: 
-       A cor da rua. Usado para tipografia principal e as bordas grossas do estilo brutalista. */
+    /* Preto Asfalto */
     --color-asphalt: #1A1A1A;
     --color-text: #1A1A1A;
     
-    /* Cinza Concreto: 
-       Elementos de suporte e linhas secundárias. */
+    /* Cinza Concreto */
     --color-concrete: #B0B0B0;
-    --color-text-light: #666666;
+    --color-text-light: #555555; /* Escureci um pouco para melhor leitura no claro */
     
-    /* Roxo Profundo (Acento): 
-       A noite e a mística. Usado para detalhes ou gradientes. */
+    /* Roxo Profundo */
     --color-purple-night: #6600FF;
     
-    /* Cores Semânticas (Feedback do Sistema) */
-    --color-live: #CCFF00;      /* O mesmo amarelo marca-texto para status "AO VIVO" */
-    --color-fav: #FF2A00;       /* Coração vermelho sangue vibrante */
-    --color-success: #00C853;   /* Verde padrão para sucesso */
-    --color-error: #D32F2F;     /* Vermelho erro */
+    /* Cores Semânticas */
+    --color-live: #CCFF00;      
+    --color-fav: #FF2A00;       
+    --color-success: #00C853;   
+    --color-error: #D32F2F;     
     --color-text-inverse: #FFFFFF;
 
-    /* Gradiente Carnavalesco (Opcional para textos especiais) */
     --gradient-carnaval: linear-gradient(135deg, #FF2A00 0%, #6600FF 100%);
 
+    /* --- 2. Tipografia --- */
+    --font-display: 'Anton', sans-serif;          
+    --font-body: 'Manrope', sans-serif;           
+    --font-script: 'Permanent Marker', cursive;   
 
-    /* --- 2. Tipografia: O Grito e a Informação --- */
-    /* Nota: Requer importação no HTML: Anton | Manrope | Permanent Marker */
-    
-    --font-display: 'Anton', sans-serif;          /* Títulos: Impacto, caixa alta, estilo cartaz */
-    --font-body: 'Manrope', sans-serif;           /* Corpo: Legibilidade moderna e geométrica */
-    --font-script: 'Permanent Marker', cursive;   /* Acentos: Estilo "pincel atômico" ou rabisco */
-
-
-    /* --- 3. Layout Neo-Brutalista (Ergonomia e Estilo) --- */
-    
-    --nav-height: 70px;     /* Zona do polegar confortável */
-    
-    /* CORREÇÃO AQUI: Aumentado de 80px para 130px para evitar corte no topo */
+    /* --- 3. Layout Neo-Brutalista --- */
+    --nav-height: 70px;     
     --header-height: 130px;
-
-    /* O Segredo do Estilo: Bordas Pretas Grossas */
     --border-width: 2px;
-    --color-border: #1A1A1A; /* A borda padrão é o Preto Asfalto */
-
-    /* Raios de Borda (Quase retos) */
+    --color-border: #1A1A1A;
     --radius-sm: 4px;   
     --radius-md: 8px;   
     --radius-lg: 12px;
     --radius-round: 50%;
 
-    /* Sombras Duras (Hard Shadows) - Sem blur, deslocamento sólido */
+    /* Sombras Duras */
     --shadow-hard: 4px 4px 0px var(--color-asphalt);
-    --shadow-hover: 6px 6px 0px var(--color-asphalt); /* Sombra cresce no hover */
-    
-    --shadow-sm: 2px 2px 0px rgba(0,0,0,0.1); /* Fallback mais suave se necessário */
+    --shadow-hover: 6px 6px 0px var(--color-asphalt);
+    --shadow-sm: 2px 2px 0px rgba(0,0,0,0.1);
 }
 
-/* --- 4. Dark Mode (Modo "Asfalto Noturno") --- */
+/* --- 4. Dark Mode (Modo "Asfalto Noturno" - MELHORADO) --- */
 @media (prefers-color-scheme: dark) {
     :root {
-        /* Fundo inverte para o Preto Asfalto */
+        /* Fundo: Preto Suave (menos agressivo que #000) */
         --color-bg: #121212; 
         
-        /* Superfícies cinza escuro */
+        /* Superfícies: Cinza Chumbo (melhor distinção do fundo) */
         --color-surface: #1E1E1E; 
         
-        /* O "Preto" das bordas e textos vira o "Branco Papel" para contraste */
-        --color-asphalt: #F0F0EB; 
-        --color-text: #E0E0E0;
-        --color-text-light: #AAAAAA;
+        /* O "Preto" das bordas vira um Branco levemente "Off" para não ofuscar */
+        --color-asphalt: #E0E0E0; 
         
-        /* Bordas claras no fundo escuro */
-        --color-border: #333333; 
+        /* Texto Principal: Quase branco, mas confortável */
+        --color-text: #F5F5F5;
+        
+        /* Texto Secundário: Clareado para garantir leitura */
+        --color-text-light: #BBBBBB; 
+        
+        /* Bordas: Um cinza médio para definir estruturas sem brilhar demais */
+        --color-border: #444444; 
 
-        /* Cores Neon continuam vibrando no escuro */
-        --color-primary: #FF4520; /* Levemente ajustado para telas OLED */
-        --color-cta: #CCFF00;     /* Amarelo continua igual */
+        /* Cores Neon: Ajuste fino para OLED */
+        --color-primary: #FF5733; 
+        --color-cta: #CCFF00;     
+        /* IMPORTANTE: --color-cta-text continua preto (#000000) */
     }
 }

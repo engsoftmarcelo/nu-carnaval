@@ -9,38 +9,30 @@ body {
     font-family: var(--font-body);
     background-color: var(--color-bg);
     color: var(--color-text);
-    /* Remove o "bouncing" do scroll no iOS */
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
 }
 
 h1, h2, h3 {
     font-family: var(--font-display);
-    text-transform: uppercase; /* Caixa alta para impacto */
+    text-transform: uppercase;
     letter-spacing: 0.5px;
     line-height: 1.1;
 }
 
-/* --- 2. Header Fixo (Estilo Sticker - CORRIGIDO) --- */
+/* --- 2. Header Fixo --- */
 .app-header {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    height: var(--header-height); /* 130px conforme variables.css */
-    
-    /* Fundo sólido (ou levemente translúcido) com borda dura */
-    background-color: rgba(240, 240, 235, 0.95); /* Baseado no Branco Papel */
+    height: var(--header-height);
+    background-color: rgba(240, 240, 235, 0.95);
     backdrop-filter: blur(5px);
     border-bottom: var(--border-width) solid var(--color-border);
-    
-    /* Padding generoso para não cortar */
     padding: 20px 16px 16px 16px; 
     z-index: 1000;
-    
-    /* Garante respeito à área segura do iPhone (notch) */
     padding-top: max(20px, env(safe-area-inset-top));
-    
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -54,18 +46,16 @@ h1, h2, h3 {
     width: 100%;
 }
 
-/* O Logo "Adesivo" */
 .header-top h1 {
     line-height: 0; 
-    background-color: var(--color-primary); /* Fundo Vermelho Neon */
+    background-color: var(--color-primary);
     padding: 8px 12px;
     border: var(--border-width) solid var(--color-asphalt);
-    box-shadow: 4px 4px 0px var(--color-asphalt); /* Sombra dura */
-    transform: rotate(-2deg); /* Levemente torto */
+    box-shadow: 4px 4px 0px var(--color-asphalt);
+    transform: rotate(-2deg);
     display: inline-block; 
 }
 
-/* Botão de Filtro no Header */
 #filter-toggle {
     font-size: 1.4rem;
     color: var(--color-asphalt);
@@ -82,21 +72,17 @@ h1, h2, h3 {
     width: 100%;
 }
 
-/* Input Brutalista */
 #search-input {
     width: 100%;
     height: 44px;
     padding: 0 16px 0 44px;
-    
     border: var(--border-width) solid var(--color-asphalt);
     border-radius: var(--radius-sm);
     background-color: var(--color-surface);
     color: var(--color-text);
-    
     font-family: var(--font-body);
     font-weight: 700;
     font-size: 1rem;
-    
     box-shadow: 4px 4px 0px var(--color-concrete);
     transition: all 0.2s ease;
 }
@@ -109,7 +95,6 @@ h1, h2, h3 {
 #search-input:focus {
     outline: none;
     border-color: var(--color-asphalt);
-    /* Sombra Amarela no foco */
     box-shadow: 4px 4px 0px var(--color-cta); 
     transform: translate(-1px, -1px);
 }
@@ -126,7 +111,6 @@ h1, h2, h3 {
 
 /* --- 3. Container Principal --- */
 #main-content {
-    /* Ajuste para o header mais alto */
     padding-top: calc(var(--header-height) + 20px); 
     padding-bottom: 90px;
     padding-left: 16px;
@@ -134,10 +118,7 @@ h1, h2, h3 {
     min-height: 100vh;
 }
 
-/* Gerenciamento de Visibilidade */
-.view-hidden {
-    display: none !important;
-}
+.view-hidden { display: none !important; }
 
 .active-view {
     display: block;
@@ -149,7 +130,7 @@ h1, h2, h3 {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- 4. Chips de Filtro (Estilo Base herdado) --- */
+/* --- 4. Chips de Filtro --- */
 .filter-chips {
     display: flex;
     gap: 12px;
@@ -165,13 +146,11 @@ h1, h2, h3 {
     color: var(--color-asphalt);
     border: var(--border-width) solid var(--color-asphalt);
     border-radius: var(--radius-sm);
-    
     padding: 8px 18px;
     font-family: var(--font-body);
     font-weight: 800;
     font-size: 0.9rem;
     white-space: nowrap;
-    
     box-shadow: 2px 2px 0px var(--color-asphalt);
     transition: all 0.1s;
 }
@@ -183,7 +162,12 @@ h1, h2, h3 {
 
 .chip.active {
     background-color: var(--color-asphalt);
-    color: var(--color-cta); /* Texto Amarelo no fundo Preto */
+    
+    /* CORREÇÃO CRÍTICA: Texto sempre visível no chip ativo */
+    color: var(--color-cta); 
+    
+    /* Em modo escuro, o fundo vira branco e o texto amarelo fica ruim. 
+       Abaixo temos um override específico para Dark Mode */
     box-shadow: 3px 3px 0px var(--color-cta);
     border-color: var(--color-asphalt);
 }
@@ -200,7 +184,6 @@ h1, h2, h3 {
     }
 }
 
-/* Loading Spinner Brutalista */
 .loading-spinner {
     width: 50px;
     height: 50px;
@@ -218,13 +201,12 @@ h1, h2, h3 {
     border: var(--border-width) solid var(--color-asphalt);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-hard);
-    
     display: flex;
     flex-direction: column;
     position: relative;
     transition: all 0.1s;
     overflow: hidden;
-    cursor: pointer; /* Indica que é clicável */
+    cursor: pointer;
 }
 
 .bloco-card:active {
@@ -313,7 +295,10 @@ h1, h2, h3 {
 .status-live {
     display: inline-block;
     background-color: var(--color-live);
-    color: var(--color-asphalt);
+    
+    /* CORREÇÃO CRÍTICA: Texto sempre PRETO no fundo AMARELO */
+    color: var(--color-cta-text) !important; 
+    
     font-family: var(--font-display);
     font-size: 1rem;
     padding: 4px 8px;
@@ -336,10 +321,8 @@ h1, h2, h3 {
     left: 0;
     width: 100%;
     height: var(--nav-height);
-    
     background-color: var(--color-surface);
     border-top: var(--border-width) solid var(--color-asphalt);
-    
     display: flex;
     justify-content: space-around;
     align-items: center;
@@ -429,6 +412,14 @@ h1, h2, h3 {
 .btn-emergency.pol { background-color: var(--color-asphalt); }
 .btn-emergency.samu { background-color: var(--color-error); }
 
+/* CORREÇÃO PARA BOTÃO POLÍCIA EM DARK MODE: Fundo claro (asphalt) precisa texto escuro */
+@media (prefers-color-scheme: dark) {
+    .btn-emergency.pol { 
+        color: #000; 
+        font-weight: 800;
+    }
+}
+
 .utility-card {
     background: var(--color-surface);
     border: var(--border-width) solid var(--color-asphalt);
@@ -465,32 +456,54 @@ h1, h2, h3 {
     font-weight: bold;
     font-size: 0.8rem;
     cursor: pointer;
+    color: var(--color-asphalt);
 }
 
-/* --- 9. Dark Mode --- */
+/* --- 9. Dark Mode Overrides Específicos --- */
 @media (prefers-color-scheme: dark) {
     .app-header, .bottom-nav, .detalhes-header {
-        background-color: var(--color-surface);
+        background-color: rgba(30, 30, 30, 0.95); /* Superfície Dark */
         border-color: var(--color-border);
     }
+    
+    /* Correção do Header Branco no Dark Mode */
+    .app-header {
+        background-color: var(--color-surface); 
+    }
+
     .bloco-card {
-        box-shadow: 4px 4px 0px #000;
+        box-shadow: 4px 4px 0px #000; /* Sombra preta no Dark Mode fica melhor */
     }
+    
     #search-input {
-        background-color: #222;
+        background-color: #252525;
         border-color: #555;
+        color: #FFF;
     }
+    
     .nav-item.active {
         background-color: rgba(255, 255, 255, 0.05);
     }
+
+    /* Correção CHIPS ATIVOS no Dark Mode */
+    /* Fundo vira branco (asphalt), Texto vira preto para ler */
+    .chip.active {
+        color: #000 !important;
+        border-color: #FFF;
+    }
+    
+    /* Botão de Filtro - ícone branco no dark */
+    #filter-toggle {
+        color: #FFF;
+    }
 }
 
-/* --- 10. View de Detalhes (Tela Cheia) --- */
+/* --- 10. View de Detalhes --- */
 #view-detalhes {
     background-color: var(--color-bg);
     min-height: 100vh;
     padding: 20px;
-    padding-top: 80px; /* Espaço para o header fixo interno */
+    padding-top: 80px; 
     animation: slideInRight 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
@@ -499,7 +512,6 @@ h1, h2, h3 {
     to { transform: translateX(0); opacity: 1; }
 }
 
-/* Header fixo da tela de detalhes */
 .detalhes-header {
     position: fixed;
     top: 0;
@@ -512,7 +524,7 @@ h1, h2, h3 {
     align-items: center;
     justify-content: space-between;
     padding: 0 16px;
-    z-index: 2000; /* Acima de tudo */
+    z-index: 2000; 
 }
 
 .detalhes-header h3 {
@@ -533,13 +545,13 @@ h1, h2, h3 {
     font-size: 1.1rem;
     box-shadow: 2px 2px 0px var(--color-asphalt);
     cursor: pointer;
+    color: var(--color-asphalt);
 }
 .btn-icon-back:active, .btn-icon-share:active { 
     transform: translate(2px, 2px); 
     box-shadow: none; 
 }
 
-/* Conteúdo Interno dos Detalhes */
 .detalhe-hero {
     background-color: var(--color-surface);
     border: 2px solid var(--color-asphalt);
@@ -590,7 +602,10 @@ h1, h2, h3 {
     display: block;
     width: 100%;
     background-color: var(--color-cta);
-    color: var(--color-cta-text);
+    
+    /* CORREÇÃO: Texto Preto no Botão Amarelo */
+    color: var(--color-cta-text) !important;
+    
     border: 2px solid var(--color-asphalt);
     padding: 16px;
     font-family: var(--font-display);
@@ -606,7 +621,7 @@ h1, h2, h3 {
     box-shadow: 2px 2px 0px var(--color-asphalt); 
 }
 
-/* --- 11. Clima / Previsão do Tempo (Novo) --- */
+/* --- 11. Clima / Previsão do Tempo --- */
 .weather-placeholder {
     min-height: 24px;
     display: flex;
@@ -618,15 +633,13 @@ h1, h2, h3 {
     transition: opacity 0.3s;
 }
 
-/* Estilo quando é SOL */
 .weather-placeholder.clima-sol i {
-    color: #FF8C00; /* Laranja Sol */
+    color: #FF8C00; 
     filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.2));
 }
 
-/* Estilo quando é CHUVA */
 .weather-placeholder.clima-chuva i {
-    color: #4A90E2; /* Azul Chuva */
+    color: #4A90E2; 
 }
 
 .weather-placeholder span {
@@ -635,11 +648,9 @@ h1, h2, h3 {
 }
 
 /* ==========================================================================
-   CHECK-IN & GAMIFICAÇÃO (Novos Estilos)
-   Botões de presença e cards de estatísticas
+   CHECK-IN & GAMIFICAÇÃO 
    ========================================================================== */
 
-/* Botão de Check-in na tela de detalhes */
 .btn-checkin {
     display: flex;
     align-items: center;
@@ -648,23 +659,20 @@ h1, h2, h3 {
     width: 100%;
     padding: 16px;
     margin-top: 16px;
-    
     background-color: var(--color-surface);
     color: var(--color-text-light);
-    border: 2px dashed var(--color-concrete); /* Tracejado quando não marcado */
+    border: 2px dashed var(--color-concrete); 
     border-radius: var(--radius-md);
-    
     font-family: var(--font-display);
     font-size: 1.2rem;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Estado "Eu Fui!" (Marcado) */
 .btn-checkin.checked {
-    background-color: var(--color-success); /* Verde Sucesso */
+    background-color: var(--color-success); 
     color: #FFF;
-    border: 2px solid var(--color-asphalt); /* Borda sólida */
+    border: 2px solid var(--color-asphalt); 
     box-shadow: 4px 4px 0px var(--color-asphalt);
     transform: scale(1.02);
 }
@@ -679,7 +687,6 @@ h1, h2, h3 {
     100% { transform: scale(1); }
 }
 
-/* Placar de Sobrevivência (Gamificação) */
 .stats-card {
     background: var(--color-surface);
     border: var(--border-width) solid var(--color-asphalt);
@@ -707,36 +714,35 @@ h1, h2, h3 {
 
 .stats-icon {
     font-size: 2.5rem;
-    color: var(--color-cta); /* Amarelo */
+    color: var(--color-cta); 
     text-shadow: 2px 2px 0px var(--color-asphalt);
     transform: rotate(10deg);
 }
 
 /* ==========================================================================
-   INSTALAÇÃO PWA (Botão Customizado)
+   INSTALAÇÃO PWA
    ========================================================================== */
 
 .btn-install {
     width: 100%;
     padding: 16px;
-    background-color: var(--color-cta); /* Amarelo Lagoinha */
-    color: var(--color-cta-text);
+    background-color: var(--color-cta); 
+    
+    /* CORREÇÃO: Texto Preto no Botão Amarelo */
+    color: var(--color-cta-text) !important;
+    
     border: var(--border-width) solid var(--color-asphalt);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-hard);
-    
-    font-family: var(--font-display); /* Anton */
+    font-family: var(--font-display); 
     font-size: 1.3rem;
     text-transform: uppercase;
     cursor: pointer;
-    
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 12px;
     transition: all 0.1s;
-    
-    /* Animação leve para chamar atenção */
     animation: pulseInstall 2s infinite;
 }
 
@@ -756,15 +762,13 @@ h1, h2, h3 {
     100% { transform: scale(1); }
 }
 
-/* Ajuste para o texto explicativo abaixo do botão */
 #install-container p {
     font-family: var(--font-body);
     font-weight: 700;
 }
 
 /* ==========================================================================
-   FILTROS AVANÇADOS (Novo)
-   Painel expansível e chips de filtro para Dia/Turno
+   FILTROS AVANÇADOS
    ========================================================================== */
 
 .filters-panel {
@@ -798,14 +802,12 @@ h1, h2, h3 {
     gap: 8px;
     overflow-x: auto;
     padding-bottom: 4px;
-    /* Esconde scrollbar visualmente mas mantém funcional */
     scrollbar-width: none; 
 }
 .filter-row::-webkit-scrollbar { display: none; }
 
-/* Ajuste nos Chips para funcionarem nos novos grupos */
 .filter-chip {
-    flex: 0 0 auto; /* Não encolher */
+    flex: 0 0 auto; 
     background-color: var(--color-surface);
     color: var(--color-text);
     border: 2px solid var(--color-asphalt);
@@ -818,14 +820,14 @@ h1, h2, h3 {
 }
 
 .filter-chip.active {
-    background-color: var(--color-primary); /* Vermelho Neon */
+    background-color: var(--color-primary); 
     color: #FFF;
     box-shadow: 3px 3px 0px var(--color-asphalt);
     transform: translate(-1px, -1px);
 }
 
 /* ==========================================================================
-   13. INDICADOR OFFLINE (Aviso de "Sem Internet")
+   13. INDICADOR OFFLINE
    ========================================================================== */
 
 .offline-banner {
@@ -833,37 +835,35 @@ h1, h2, h3 {
     top: 0;
     left: 0;
     width: 100%;
-    height: 40px; /* Altura fixa */
+    height: 40px; 
+    background-color: var(--color-asphalt); 
     
-    background-color: var(--color-asphalt); /* Fundo Preto/Cinza Escuro */
-    color: var(--color-cta); /* Texto Amarelo Neon */
+    /* Texto Amarelo no Fundo Asphalt (Branco no Dark Mode) -> Fica ruim */
+    /* FIX: Forçar cores fixas aqui para garantir legibilidade */
+    background-color: #1A1A1A !important;
+    color: #CCFF00 !important;
     
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    
     font-family: var(--font-body);
     font-weight: 800;
     font-size: 0.9rem;
     text-transform: uppercase;
-    
-    z-index: 9999; /* Acima de tudo, inclusive do Header */
+    z-index: 9999; 
     box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    
-    /* Animação suave de entrada */
     transition: transform 0.3s ease-in-out;
 }
 
-/* Quando estiver oculto (view-hidden via JS) */
 .offline-banner.view-hidden {
     transform: translateY(-100%);
-    display: flex !important; /* Sobrescreve o display:none global para permitir animação */
+    display: flex !important; 
     visibility: hidden;
 }
 
 /* ==========================================================================
-   PERFIL DO DESENVOLVEDOR (Créditos)
+   PERFIL DO DESENVOLVEDOR
    ========================================================================== */
 
 .dev-profile {
@@ -875,10 +875,9 @@ h1, h2, h3 {
     margin-bottom: 32px;
     text-align: center;
     position: relative;
-    overflow: hidden; /* Para a faixa decorativa não vazar */
+    overflow: hidden; 
 }
 
-/* Faixa decorativa no topo (Efeito Faixa de Obra/Polícia) */
 .dev-profile::before {
     content: '';
     position: absolute;
@@ -901,9 +900,9 @@ h1, h2, h3 {
     height: 100px;
     border-radius: 50%;
     border: 3px solid var(--color-asphalt);
-    margin: 12px auto 12px auto; /* Ajuste para não colar na faixa */
+    margin: 12px auto 12px auto; 
     object-fit: cover;
-    box-shadow: 4px 4px 0px var(--color-cta); /* Sombra Amarela */
+    box-shadow: 4px 4px 0px var(--color-cta); 
     background-color: var(--color-bg);
 }
 
@@ -912,7 +911,7 @@ h1, h2, h3 {
     color: var(--color-asphalt);
     margin-bottom: 4px;
     text-transform: uppercase;
-    font-family: var(--font-display); /* Anton */
+    font-family: var(--font-display); 
 }
 
 .dev-info h3 .highlight {
@@ -922,6 +921,9 @@ h1, h2, h3 {
     box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
     transform: rotate(-1deg);
     display: inline-block;
+    
+    /* CORREÇÃO: Texto preto na highlight amarela */
+    color: #000 !important;
 }
 
 .dev-info p {
@@ -932,7 +934,7 @@ h1, h2, h3 {
 }
 
 .dev-bio {
-    font-family: var(--font-script); /* Permanent Marker */
+    font-family: var(--font-script); 
     color: var(--color-purple-night) !important;
     font-size: 1.1rem !important;
     transform: rotate(-2deg);
@@ -971,8 +973,7 @@ h1, h2, h3 {
     font-size: 1.1rem;
 }
 
-/* Cores específicas no hover (Opcional) */
-.btn-social:hover { background-color: #fff; }
+.btn-social:hover { background-color: #fff; color: #000; }
 .btn-social:hover .fa-github { color: #333; }
 .btn-social:hover .fa-linkedin { color: #0077b5; }
 .btn-social:hover .fa-instagram { color: #E1306C; }
@@ -981,20 +982,20 @@ h1, h2, h3 {
    AVISO DE PROGRAMAÇÃO (Alerta de Pré-Carnaval)
    ========================================================================== */
 .aviso-programacao {
-    background-color: var(--color-cta); /* Amarelo Neon */
-    color: var(--color-asphalt);        /* Preto */
+    background-color: var(--color-cta); 
+    
+    /* CORREÇÃO: Texto sempre PRETO no fundo AMARELO */
+    color: var(--color-cta-text) !important;       
+    
     border: var(--border-width) solid var(--color-asphalt);
     border-radius: var(--radius-sm);
-    
     padding: 16px;
-    margin-bottom: 20px; /* Espaço antes da lista */
-    
+    margin-bottom: 20px; 
     display: flex;
-    align-items: flex-start; /* Alinha ícone no topo se o texto quebrar */
+    align-items: flex-start; 
     gap: 12px;
-    
-    box-shadow: var(--shadow-hard); /* Sombra dura deslocada */
-    transform: rotate(-1deg);       /* Leve inclinação estilo "adesivo colado" */
+    box-shadow: var(--shadow-hard); 
+    transform: rotate(-1deg);       
     transition: transform 0.2s;
 }
 
@@ -1005,7 +1006,7 @@ h1, h2, h3 {
 .aviso-programacao i {
     font-size: 1.4rem;
     margin-top: 2px;
-    color: var(--color-primary); /* Vermelho no ícone para destaque extra */
+    color: var(--color-primary); 
 }
 
 .aviso-programacao p {
@@ -1021,7 +1022,7 @@ h1, h2, h3 {
 }
 
 /* ==========================================================================
-   VIBE CHECK (Real-Time Feed)
+   VIBE CHECK
    ========================================================================== */
 
 .vibe-section {
@@ -1030,7 +1031,6 @@ h1, h2, h3 {
     box-shadow: 4px 4px 0px var(--color-asphalt) !important;
 }
 
-/* O Display (Termômetro) */
 .vibe-display {
     background-color: #EEE;
     border: 2px solid var(--color-asphalt);
@@ -1039,6 +1039,7 @@ h1, h2, h3 {
     text-align: center;
     margin-bottom: 16px;
     transition: all 0.3s;
+    color: #000; /* Garante texto escuro */
 }
 
 .vibe-status {
@@ -1048,7 +1049,6 @@ h1, h2, h3 {
     display: block;
 }
 
-/* Estados do Display */
 .vibe-display.vibe-hot {
     background-color: #FFE5E5;
     border-color: var(--color-primary);
@@ -1062,6 +1062,14 @@ h1, h2, h3 {
 .vibe-display.vibe-neutral {
     background-color: #FFF;
     color: var(--color-asphalt);
+}
+
+/* No dark mode, vibe neutral pode ficar com texto branco se asphalt inverter. */
+@media (prefers-color-scheme: dark) {
+    .vibe-display.vibe-neutral {
+        background-color: #333;
+        color: #FFF;
+    }
 }
 
 .vibe-badges {
@@ -1089,7 +1097,6 @@ h1, h2, h3 {
     border-radius: 4px;
 }
 
-/* Botões de Ação */
 .vibe-controls {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -1107,6 +1114,7 @@ h1, h2, h3 {
     box-shadow: 2px 2px 0px var(--color-asphalt);
     transition: transform 0.1s;
     line-height: 1.2;
+    color: var(--color-asphalt);
 }
 
 .btn-vibe:active {
@@ -1120,7 +1128,6 @@ h1, h2, h3 {
     filter: grayscale(1);
 }
 
-/* Cores dos Botões */
 .btn-fogo { color: var(--color-primary); }
 .btn-fogo:hover { background: #FFE5E5; }
 
@@ -1130,7 +1137,14 @@ h1, h2, h3 {
 .btn-policia { color: #0044CC; }
 .btn-policia:hover { background: #E6F0FF; }
 
-/* Estado de Bloqueio (Não logado) */
+@media (prefers-color-scheme: dark) {
+    .btn-fogo:hover { background: #330000; }
+    .btn-morto { color: #AAA; }
+    .btn-morto:hover { background: #333; }
+    .btn-policia { color: #66AAFF; }
+    .btn-policia:hover { background: #001133; }
+}
+
 .login-lock {
     grid-column: span 3;
     text-align: center;
@@ -1177,7 +1191,6 @@ h1, h2, h3 {
     position: relative;
 }
 
-/* Marca d'água de fundo */
 #poster-stories::before {
     content: "NU! CARNAVAL";
     position: absolute;
@@ -1275,7 +1288,6 @@ h1, h2, h3 {
     color: #FF2A00 !important; /* Ícones vermelhos */
 }
 
-/* Footer do Cartaz */
 .poster-footer {
     z-index: 1;
     margin-top: 40px;
