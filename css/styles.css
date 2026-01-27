@@ -1174,6 +1174,10 @@ h1, h2, h3 {
     
     /* Força fundo claro (Papel) mesmo em Dark Mode */
     background-color: #F0F0EB !important; 
+    color: #1A1A1A !important; /* Garante texto preto no container base */
+    -webkit-print-color-adjust: exact; /* Força impressão de cores exatas */
+    print-color-adjust: exact;
+
     background-image: 
         radial-gradient(circle at 10% 20%, rgba(255, 42, 0, 0.05) 0%, transparent 20%),
         radial-gradient(circle at 90% 80%, rgba(204, 255, 0, 0.1) 0%, transparent 20%);
@@ -1186,7 +1190,6 @@ h1, h2, h3 {
     justify-content: space-between;
     
     font-family: 'Manrope', sans-serif; /* Define fonte explícita */
-    color: #1A1A1A !important; /* Texto Preto */
     box-sizing: border-box;
     position: relative;
 }
