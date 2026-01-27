@@ -264,6 +264,9 @@ export function mostrarDetalhes(bloco) {
     });
 }
 
+/**
+ * Gerencia a troca de visualização (Abas) e Visibilidade da Barra de Pesquisa
+ */
 export function mudarVisualizacao(viewId) {
     document.querySelectorAll('main > section').forEach(section => {
         section.classList.remove('active-view');
@@ -274,6 +277,7 @@ export function mudarVisualizacao(viewId) {
     const bottomNav = document.querySelector('.bottom-nav');
     const mainContent = document.getElementById('main-content');
 
+    // Lógica de exibição do Header/Nav e Padding
     if (viewId === 'view-detalhes') {
         appHeader.style.display = 'none';
         bottomNav.style.display = 'none';
@@ -281,9 +285,12 @@ export function mudarVisualizacao(viewId) {
     } else {
         appHeader.style.display = 'flex';
         bottomNav.style.display = 'flex';
-        mainContent.style.paddingTop = 'calc(var(--header-height) + 20px)';
+        // Remove o padding inline para que o CSS (200px) assuma o controle
+        // Isso evita que o header cubra o conteúdo
+        mainContent.style.paddingTop = ''; 
     }
 
+    // Ativa a view alvo
     const target = document.getElementById(viewId);
     if (target) {
         target.classList.remove('view-hidden');
@@ -293,6 +300,25 @@ export function mudarVisualizacao(viewId) {
 
     if (viewId === 'view-guia') {
         renderBotaoNotificacao();
+    }
+
+    // --- CONTROLE DE VISIBILIDADE DA BUSCA ---
+    // Oculta busca e filtros na aba Ajuda/Guia, mostra nas outras
+    const searchContainer = document.querySelector('.search-container');
+    const filterChips = document.querySelector('.filter-chips');
+    const filterToggle = document.getElementById('filter-toggle');
+
+    if (searchContainer) {
+        if (viewId === 'view-guia') {
+            searchContainer.style.display = 'none';
+            if (filterChips) filterChips.style.display = 'none';
+            if (filterToggle) filterToggle.style.display = 'none';
+        } else {
+            // Garante visibilidade em Mapa, Meus Trens, Explorar
+            searchContainer.style.display = 'block';
+            if (filterChips) filterChips.style.display = 'flex';
+            if (filterToggle) filterToggle.style.display = 'block';
+        }
     }
 }
 
