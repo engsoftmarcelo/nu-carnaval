@@ -372,9 +372,18 @@ function setupEventListeners() {
 
                 // 3. Gera o Canvas via html2canvas
                 const canvas = await html2canvas(posterElement, {
-                    scale: 1, // Já está em 1080px, scale 1 é suficiente
+                    scale: 1, 
                     useCORS: true,
-                    backgroundColor: null
+                    // FIX: Força a cor de fundo do papel. Se for null, fica transparente e vira preto no Insta Dark Mode.
+                    backgroundColor: '#F0F0EB', 
+                    onclone: (documentoClonado) => {
+                        // Reforço extra: Garante que o elemento clonado tenha a cor correta
+                        const el = documentoClonado.getElementById('poster-stories');
+                        if (el) {
+                            el.style.backgroundColor = '#F0F0EB';
+                            el.style.color = '#1A1A1A';
+                        }
+                    }
                 });
 
                 // 4. Converte para Blob e Compartilha
