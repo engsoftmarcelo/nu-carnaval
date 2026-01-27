@@ -1,11 +1,12 @@
 /* ==========================================================================
    js/app.js
-   Ponto de entrada da aplicação - VERSÃO FINAL COM PWA, FILTROS, FIREBASE & SHORTCUTS
-   Inclui: Filtros, Mapa, Detalhes, Timeline, Notificações, Sincronização e Deep Linking.
+   Ponto de entrada da aplicação - VERSÃO FINAL COM PWA, FILTROS, FIREBASE & STORIES
+   Inclui: Filtros, Mapa, Detalhes, Timeline, Notificações, Sincronização e Gerador de Stories.
    ========================================================================== */
 
 import { carregarDados } from './data.js';
-import { renderBlocos, mudarVisualizacao, atualizarBotaoFavorito, renderTimeline, renderStats, mostrarDetalhes } from './ui.js';
+// Adicionada a importação de renderPoster
+import { renderBlocos, mudarVisualizacao, atualizarBotaoFavorito, renderTimeline, renderStats, mostrarDetalhes, renderPoster } from './ui.js';
 import { initMap, atualizarMarcadores, focarCategoriaNoMapa } from './map.js';
 import { getFavoritos, toggleFavorito, importarFavoritos, toggleCheckin, getCheckinCount } from './storage.js';
 import { NotificationManager } from './notifications.js';
@@ -102,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 6. Verifica se há um roteiro compartilhado na URL
         verificarRoteiroCompartilhado();
 
-        // 7. [NOVO] Verifica se o app foi aberto via App Shortcuts (Botão SOS, Banheiros, etc)
+        // 7. Verifica se o app foi aberto via App Shortcuts (Botão SOS, Banheiros, etc)
         verificarAcoesDeAtalho();
 
         // 8. Monitora Auth para atualizar UI do botão de login
@@ -237,7 +238,7 @@ function setupEventListeners() {
         });
     }
 
-    // 5. Compartilhar
+    // 5. Compartilhar (App Geral)
     const btnShare = document.getElementById('btn-share');
     if (btnShare) {
         btnShare.addEventListener('click', () => {
@@ -253,7 +254,7 @@ function setupEventListeners() {
         });
     }
 
-    // 6. Compartilhar Roteiro
+    // 6. Compartilhar Roteiro (Link)
     const btnShareRoteiro = document.getElementById('btn-share-roteiro');
     if (btnShareRoteiro) {
         btnShareRoteiro.addEventListener('click', () => {
@@ -328,6 +329,88 @@ function setupEventListeners() {
                 }
             } else {
                 loginGoogle();
+            }
+        });
+    }
+
+    // 10. Botão "Manda pro Insta" (Stories)
+    const btnStories = document.getElementById('btn-stories');
+    if (btnStories) {
+        btnStories.addEventListener('click', async () => {
+            const favoritosIds = getFavoritos();
+            
+            if (favoritosIds.length === 0) {
+                alert('Adicione blocos aos favoritos primeiro!');
+                return;
+            }
+
+            const btnIcon = btnStories.querySelector('i');
+            const originalIconClass = btnIcon.className;
+            
+            // Feedback de carregamento
+            btnStories.disabled = true;
+            btnIcon.className = 'fas fa-spinner fa-spin';
+            
+            try {
+                // 1. Pega os dados dos blocos favoritos
+                const blocosFavoritos = appState.todosBlocos
+                    .filter(b => favoritosIds.includes(b.id))
+                    .sort((a, b) => {
+                        // Ordena por Data e Hora
+                        const dateA = new Date(`${a.date}T${a.time}`);
+                        const dateB = new Date(`${b.date}T${b.time}`);
+                        return dateA - dateB;
+                    });
+
+                // 2. Renderiza o HTML oculto
+                renderPoster(blocosFavoritos);
+
+                // Pequeno delay para garantir renderização do DOM/Fontes
+                await new Promise(r => setTimeout(r, 500));
+
+                const posterElement = document.getElementById('poster-stories');
+
+                // 3. Gera o Canvas via html2canvas
+                const canvas = await html2canvas(posterElement, {
+                    scale: 1, // Já está em 1080px, scale 1 é suficiente
+                    useCORS: true,
+                    backgroundColor: null
+                });
+
+                // 4. Converte para Blob e Compartilha
+                canvas.toBlob(async (blob) => {
+                    const file = new File([blob], 'meu-roteiro-nu.png', { type: 'image/png' });
+
+                    // Tenta usar API de Compartilhamento Nativa (Mobile)
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: 'Meu Roteiro Nu! Carnaval',
+                                text: 'Se liga onde eu vou estar no Carnaval de BH! 🎉'
+                            });
+                        } catch (err) {
+                            if (err.name !== 'AbortError') console.error(err);
+                        }
+                    } else {
+                        // Fallback: Download direto (Desktop)
+                        const link = document.createElement('a');
+                        link.download = 'meu-roteiro-nu.png';
+                        link.href = canvas.toDataURL();
+                        link.click();
+                        alert('Imagem salva! Agora é só postar nos Stories.');
+                    }
+
+                    // Restaura botão
+                    btnStories.disabled = false;
+                    btnIcon.className = originalIconClass;
+                }, 'image/png');
+
+            } catch (err) {
+                console.error('Erro ao gerar stories:', err);
+                alert('Opa, deu ruim ao gerar a imagem. Tente de novo.');
+                btnStories.disabled = false;
+                btnIcon.className = originalIconClass;
             }
         });
     }

@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - VERSÃO FINAL (Com Vibe Check e Uber Deep Link)
+   Camada de Interface - VERSÃO FINAL (Com Vibe Check, Uber e Stories)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn } from './storage.js';
@@ -118,7 +118,7 @@ export function mostrarDetalhes(bloco) {
         mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
     }
 
-    // [NOVO] Link do Uber ("Me Leva")
+    // Link do Uber ("Me Leva")
     let btnUberHtml = '';
     if (bloco.lat && bloco.lng) {
         const nickname = encodeURIComponent(bloco.name);
@@ -543,4 +543,68 @@ function renderBotaoNotificacao() {
     };
 
     container.insertBefore(btn, container.firstChild);
+}
+
+/* ==========================================================================
+   GERADOR DE STORIES (MANDA PRO INSTA)
+   Gera o HTML para ser capturado pelo html2canvas
+   ========================================================================== */
+
+/**
+ * Renderiza o cartaz para o Instagram Stories (HTML oculto)
+ * @param {Array} blocos - Lista de blocos favoritos
+ */
+export function renderPoster(blocos) {
+    const container = document.getElementById('poster-stories');
+    if (!container) return;
+
+    let html = `
+        <div class="poster-header">
+            <div class="poster-title">MEU ROTEIRO</div>
+            <div class="poster-subtitle">Nu! Carnaval 2026 🎉</div>
+        </div>
+        <div class="poster-list">
+    `;
+
+    const MAX_ITEMS = 6;
+    const blocosParaExibir = blocos.slice(0, MAX_ITEMS);
+
+    if (blocos.length === 0) {
+        html += `
+            <div class="poster-item" style="justify-content:center;">
+                <h3 style="font-size:2rem; text-align:center;">Ainda não escolhi meus trens! 🤷‍♂️</h3>
+            </div>
+        `;
+    } else {
+        blocosParaExibir.forEach(bloco => {
+            const diaMes = bloco.date ? bloco.date.split('-').reverse().slice(0,2).join('/') : '';
+            
+            html += `
+                <div class="poster-item">
+                    <div class="poster-time">${bloco.time}</div>
+                    <div class="poster-info">
+                        <h3>${bloco.name}</h3>
+                        <p><i class="fas fa-calendar-alt"></i> ${diaMes} • <i class="fas fa-map-marker-alt"></i> ${bloco.neighborhood || 'BH'}</p>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    if (blocos.length > MAX_ITEMS) {
+        html += `
+            <div class="poster-item" style="background:var(--color-primary); color:white; justify-content:center;">
+                <h3 style="font-size:2rem;">+ ${blocos.length - MAX_ITEMS} outros blocos...</h3>
+            </div>
+        `;
+    }
+
+    html += `
+        </div>
+        <div class="poster-footer">
+            <p>Monte o seu em <span>nu-carnaval.app</span></p>
+        </div>
+    `;
+
+    container.innerHTML = html;
 }

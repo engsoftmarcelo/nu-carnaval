@@ -1147,3 +1147,145 @@ h1, h2, h3 {
     50% { opacity: 0.5; }
     100% { opacity: 1; }
 }
+
+/* ==========================================================================
+   css/styles.css
+   (Conteúdo existente mantido...)
+   ========================================================================== */
+/* ... (Mantenha todo o CSS existente acima) ... */
+
+/* ==========================================================================
+   GERADOR DE STORIES (NEO-BRUTALIST POSTER)
+   Layout fixo 1080x1920 para geração de imagem via canvas
+   ========================================================================== */
+
+#poster-stories {
+    width: 1080px;
+    height: 1920px;
+    background-color: var(--color-bg);
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(255, 42, 0, 0.05) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(204, 255, 0, 0.1) 0%, transparent 20%);
+    
+    padding: 60px;
+    border: 20px solid var(--color-asphalt);
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    
+    font-family: var(--font-body);
+    color: var(--color-asphalt);
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* Marca d'água de fundo */
+#poster-stories::before {
+    content: "NU! CARNAVAL";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-family: var(--font-display);
+    font-size: 15rem;
+    color: rgba(0,0,0,0.03);
+    white-space: nowrap;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.poster-header {
+    z-index: 1;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.poster-title {
+    display: inline-block;
+    background-color: var(--color-primary);
+    color: #FFF;
+    font-family: var(--font-display);
+    font-size: 5rem;
+    padding: 20px 40px;
+    border: 8px solid var(--color-asphalt);
+    box-shadow: 15px 15px 0px var(--color-asphalt);
+    transform: rotate(-2deg);
+    text-transform: uppercase;
+}
+
+.poster-subtitle {
+    margin-top: 30px;
+    font-family: var(--font-script);
+    font-size: 2.5rem;
+    color: var(--color-purple-night);
+    transform: rotate(2deg);
+}
+
+.poster-list {
+    z-index: 1;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.poster-item {
+    background: var(--color-surface);
+    border: 6px solid var(--color-asphalt);
+    border-radius: 16px;
+    padding: 25px 30px;
+    box-shadow: 10px 10px 0px var(--color-asphalt);
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.poster-time {
+    background-color: var(--color-cta);
+    color: var(--color-asphalt);
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    padding: 10px 20px;
+    border: 4px solid var(--color-asphalt);
+    border-radius: 8px;
+}
+
+.poster-info {
+    flex-grow: 1;
+}
+
+.poster-info h3 {
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+    line-height: 1.1;
+}
+
+.poster-info p {
+    font-size: 1.4rem;
+    color: var(--color-text-light);
+    font-weight: 700;
+}
+
+/* Footer do Cartaz */
+.poster-footer {
+    z-index: 1;
+    margin-top: 40px;
+    text-align: center;
+    border-top: 6px dashed var(--color-asphalt);
+    padding-top: 40px;
+}
+
+.poster-footer p {
+    font-family: var(--font-body);
+    font-weight: 800;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+.poster-footer span {
+    background-color: var(--color-asphalt);
+    color: var(--color-cta);
+    padding: 5px 15px;
+}
