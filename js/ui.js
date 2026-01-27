@@ -558,6 +558,7 @@ export function renderPoster(blocos) {
     const container = document.getElementById('poster-stories');
     if (!container) return;
 
+    // Cabeçalho
     let html = `
         <div class="poster-header">
             <div class="poster-title">MEU ROTEIRO</div>
@@ -566,6 +567,7 @@ export function renderPoster(blocos) {
         <div class="poster-list">
     `;
 
+    // Limite de itens para caber na imagem
     const MAX_ITEMS = 6;
     const blocosParaExibir = blocos.slice(0, MAX_ITEMS);
 
@@ -577,6 +579,7 @@ export function renderPoster(blocos) {
         `;
     } else {
         blocosParaExibir.forEach(bloco => {
+            // Formata data simples (31/01)
             const diaMes = bloco.date ? bloco.date.split('-').reverse().slice(0,2).join('/') : '';
             
             html += `
@@ -591,10 +594,11 @@ export function renderPoster(blocos) {
         });
     }
 
+    // Se tiver mais blocos que o limite
     if (blocos.length > MAX_ITEMS) {
         html += `
-            <div class="poster-item" style="background:var(--color-primary); color:white; justify-content:center;">
-                <h3 style="font-size:2rem;">+ ${blocos.length - MAX_ITEMS} outros blocos...</h3>
+            <div class="poster-item" style="background:#FF2A00 !important; color:white !important; justify-content:center;">
+                <h3 style="font-size:2rem; color: white !important;">+ ${blocos.length - MAX_ITEMS} outros blocos...</h3>
             </div>
         `;
     }
@@ -602,7 +606,7 @@ export function renderPoster(blocos) {
     html += `
         </div>
         <div class="poster-footer">
-            <p>Monte o seu em <span>nu-carnaval.app</span></p>
+            <p>Monte o seu em <span>nu-carnaval.vercel.app</span></p>
         </div>
     `;
 

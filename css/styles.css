@@ -1149,33 +1149,30 @@ h1, h2, h3 {
 }
 
 /* ==========================================================================
-   css/styles.css
-   (Conteúdo existente mantido...)
-   ========================================================================== */
-/* ... (Mantenha todo o CSS existente acima) ... */
-
-/* ==========================================================================
    GERADOR DE STORIES (NEO-BRUTALIST POSTER)
    Layout fixo 1080x1920 para geração de imagem via canvas
+   CORES FIXAS (HARDCODED) PARA GARANTIR VISUALIZAÇÃO CORRETA EM QUALQUER TEMA
    ========================================================================== */
 
 #poster-stories {
     width: 1080px;
     height: 1920px;
-    background-color: var(--color-bg);
+    
+    /* Força fundo claro (Papel) mesmo em Dark Mode */
+    background-color: #F0F0EB !important; 
     background-image: 
         radial-gradient(circle at 10% 20%, rgba(255, 42, 0, 0.05) 0%, transparent 20%),
         radial-gradient(circle at 90% 80%, rgba(204, 255, 0, 0.1) 0%, transparent 20%);
     
     padding: 60px;
-    border: 20px solid var(--color-asphalt);
+    border: 20px solid #1A1A1A !important; /* Borda Preta */
     
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     
-    font-family: var(--font-body);
-    color: var(--color-asphalt);
+    font-family: 'Manrope', sans-serif; /* Define fonte explícita */
+    color: #1A1A1A !important; /* Texto Preto */
     box-sizing: border-box;
     position: relative;
 }
@@ -1187,7 +1184,7 @@ h1, h2, h3 {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) rotate(-45deg);
-    font-family: var(--font-display);
+    font-family: 'Anton', sans-serif;
     font-size: 15rem;
     color: rgba(0,0,0,0.03);
     white-space: nowrap;
@@ -1203,23 +1200,24 @@ h1, h2, h3 {
 
 .poster-title {
     display: inline-block;
-    background-color: var(--color-primary);
-    color: #FFF;
-    font-family: var(--font-display);
+    background-color: #FF2A00 !important; /* Vermelho Neon Fixo */
+    color: #FFFFFF !important;
+    font-family: 'Anton', sans-serif;
     font-size: 5rem;
     padding: 20px 40px;
-    border: 8px solid var(--color-asphalt);
-    box-shadow: 15px 15px 0px var(--color-asphalt);
+    border: 8px solid #1A1A1A !important;
+    box-shadow: 15px 15px 0px #1A1A1A !important;
     transform: rotate(-2deg);
     text-transform: uppercase;
 }
 
 .poster-subtitle {
     margin-top: 30px;
-    font-family: var(--font-script);
+    font-family: 'Permanent Marker', cursive;
     font-size: 2.5rem;
-    color: var(--color-purple-night);
+    color: #6600FF !important; /* Roxo Fixo */
     transform: rotate(2deg);
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
 }
 
 .poster-list {
@@ -1232,23 +1230,26 @@ h1, h2, h3 {
 }
 
 .poster-item {
-    background: var(--color-surface);
-    border: 6px solid var(--color-asphalt);
+    background: #FFFFFF !important; /* Fundo Branco Fixo para o Card */
+    border: 6px solid #1A1A1A !important;
     border-radius: 16px;
     padding: 25px 30px;
-    box-shadow: 10px 10px 0px var(--color-asphalt);
+    box-shadow: 10px 10px 0px #1A1A1A !important;
     display: flex;
     align-items: center;
     gap: 30px;
+    
+    /* Garante que o texto dentro seja preto */
+    color: #1A1A1A !important; 
 }
 
 .poster-time {
-    background-color: var(--color-cta);
-    color: var(--color-asphalt);
-    font-family: var(--font-display);
+    background-color: #CCFF00 !important; /* Amarelo Neon Fixo */
+    color: #1A1A1A !important;
+    font-family: 'Anton', sans-serif;
     font-size: 2.5rem;
     padding: 10px 20px;
-    border: 4px solid var(--color-asphalt);
+    border: 4px solid #1A1A1A !important;
     border-radius: 8px;
 }
 
@@ -1260,12 +1261,18 @@ h1, h2, h3 {
     font-size: 2.2rem;
     margin-bottom: 8px;
     line-height: 1.1;
+    color: #1A1A1A !important; /* Força cor preta no título */
+    font-weight: 800;
 }
 
 .poster-info p {
     font-size: 1.4rem;
-    color: var(--color-text-light);
+    color: #666666 !important; /* Cinza escuro fixo */
     font-weight: 700;
+}
+
+.poster-info i {
+    color: #FF2A00 !important; /* Ícones vermelhos */
 }
 
 /* Footer do Cartaz */
@@ -1273,19 +1280,20 @@ h1, h2, h3 {
     z-index: 1;
     margin-top: 40px;
     text-align: center;
-    border-top: 6px dashed var(--color-asphalt);
+    border-top: 6px dashed #1A1A1A !important;
     padding-top: 40px;
 }
 
 .poster-footer p {
-    font-family: var(--font-body);
+    font-family: 'Manrope', sans-serif;
     font-weight: 800;
     font-size: 1.5rem;
     text-transform: uppercase;
     letter-spacing: 2px;
+    color: #1A1A1A !important;
 }
 .poster-footer span {
-    background-color: var(--color-asphalt);
-    color: var(--color-cta);
+    background-color: #1A1A1A !important;
+    color: #CCFF00 !important;
     padding: 5px 15px;
 }
