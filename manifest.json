@@ -1,11 +1,11 @@
 {
-  "name": "Carnaval Belo Horizonte 2025",
-  "short_name": "Carnaval BH",
+  "name": "Carnaval Belo Horizonte 2026",
+  "short_name": "Nu! Carnaval",
   "description": "O guia oficial e offline para os blocos de rua de BH.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#FAFAFA",
-  "theme_color": "#8A2BE2",
+  "theme_color": "#FF2A00",
   "orientation": "portrait",
   "lang": "pt-BR",
   "icons": [
@@ -20,6 +20,47 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Blocos Agora",
+      "short_name": "Agora",
+      "description": "Ver blocos rolando neste momento",
+      "url": "./index.html?action=agora#explorar",
+      "icons": [
+        {
+          "src": "assets/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Mapa de Banheiros",
+      "short_name": "Banheiros",
+      "description": "Encontrar banheiros próximos",
+      "url": "./index.html?action=banheiros#mapa",
+      "icons": [
+        {
+          "src": "assets/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Botão SOS",
+      "short_name": "SOS",
+      "description": "Emergência e Telefones úteis",
+      "url": "./index.html?action=sos#guia",
+      "icons": [
+        {
+          "src": "assets/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

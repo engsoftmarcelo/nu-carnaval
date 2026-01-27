@@ -1,17 +1,14 @@
 /* ==========================================================================
    js/app.js
-   Ponto de entrada da aplicação - VERSÃO FINAL COM PWA, FILTROS & FIREBASE
-   Inclui: Filtros, Mapa, Detalhes, Timeline, Notificações e Sincronização na Nuvem.
+   Ponto de entrada da aplicação - VERSÃO FINAL COM PWA, FILTROS, FIREBASE & SHORTCUTS
+   Inclui: Filtros, Mapa, Detalhes, Timeline, Notificações, Sincronização e Deep Linking.
    ========================================================================== */
 
 import { carregarDados } from './data.js';
-// CORREÇÃO: Adicionado 'mostrarDetalhes' aos imports para usar na função do mapa
 import { renderBlocos, mudarVisualizacao, atualizarBotaoFavorito, renderTimeline, renderStats, mostrarDetalhes } from './ui.js';
-// ATUALIZAÇÃO: Adicionado focarCategoriaNoMapa para os cards de utilidade
 import { initMap, atualizarMarcadores, focarCategoriaNoMapa } from './map.js';
 import { getFavoritos, toggleFavorito, importarFavoritos, toggleCheckin, getCheckinCount } from './storage.js';
 import { NotificationManager } from './notifications.js';
-// Importação do Firebase (NOVO)
 import { loginGoogle, logout, monitorarAuth } from './firebase.js';
 
 // --- Lógica PWA (Instalação) ---
@@ -73,17 +70,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         appState.todosBlocos = await carregarDados();
         appState.blocosFiltrados = [...appState.todosBlocos];
         
-        // --- CORREÇÃO: EXPOR FUNÇÃO PARA O MAPA ---
-        // Cria a ponte global que o popup do Leaflet vai chamar ao clicar em "+ Detalhes"
+        // --- PONTE PARA O MAPA ---
+        // Cria a função global que o popup do Leaflet vai chamar ao clicar em "+ Detalhes"
         window.abrirDetalhesDoMapa = (id) => {
             const bloco = appState.todosBlocos.find(b => b.id === id);
             if (bloco) {
-                mostrarDetalhes(bloco); // Agora esta função está importada corretamente
+                mostrarDetalhes(bloco);
             } else {
                 console.error("Bloco não encontrado:", id);
             }
         };
-        // -------------------------------------------
 
         // 2. Inicializa a UI de Filtros Avançados
         inicializarFiltrosUI();
@@ -106,7 +102,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 6. Verifica se há um roteiro compartilhado na URL
         verificarRoteiroCompartilhado();
 
-        // 7. Monitora Auth para atualizar UI do botão de login (NOVO)
+        // 7. [NOVO] Verifica se o app foi aberto via App Shortcuts (Botão SOS, Banheiros, etc)
+        verificarAcoesDeAtalho();
+
+        // 8. Monitora Auth para atualizar UI do botão de login
         monitorarAuth((logado, user) => {
             const btn = document.getElementById('btn-login');
             const msg = document.getElementById('msg-login');
@@ -150,7 +149,6 @@ function setupEventListeners() {
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
-            // Normaliza para buscar sem acento
             appState.filtros.termoBusca = e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             aplicarFiltros();
         });
@@ -170,8 +168,6 @@ function setupEventListeners() {
             if (targetId === 'roteiro') {
                 appState.filtros.apenasFavoritos = true;
                 mudarVisualizacao('view-favoritos');
-                
-                // Renderiza o placar de gamificação ao entrar na aba
                 renderStats(getCheckinCount());
             } else {
                 appState.filtros.apenasFavoritos = false;
@@ -187,30 +183,18 @@ function setupEventListeners() {
         });
     });
 
-    // --- NOVO: Lógica dos Cards de Utilidade (Metrô e Saúde) ---
+    // Lógica dos Cards de Utilidade (Metrô e Saúde)
     const cardMetro = document.getElementById('card-metro');
     if (cardMetro) {
         cardMetro.addEventListener('click', () => {
-            mudarVisualizacao('view-mapa');
-            document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('active'));
-            document.querySelector('a[href="#mapa"]').classList.add('active');
-            setTimeout(() => {
-                window.dispatchEvent(new Event('resize')); 
-                focarCategoriaNoMapa('metro'); 
-            }, 200);
+            navegarParaMapaEFiltrar('metro');
         });
     }
 
     const cardSocorro = document.getElementById('card-socorro');
     if (cardSocorro) {
         cardSocorro.addEventListener('click', () => {
-            mudarVisualizacao('view-mapa');
-            document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('active'));
-            document.querySelector('a[href="#mapa"]').classList.add('active');
-            setTimeout(() => {
-                window.dispatchEvent(new Event('resize'));
-                focarCategoriaNoMapa('socorro'); 
-            }, 200);
+            navegarParaMapaEFiltrar('socorro');
         });
     }
 
@@ -218,14 +202,12 @@ function setupEventListeners() {
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.fav-btn');
         if (btn) {
-            e.stopPropagation(); // Evita abrir os detalhes
+            e.stopPropagation();
             const blocoId = btn.dataset.id;
             
-            // Alterna o estado de favorito
             const ehFavorito = toggleFavorito(blocoId);
             atualizarBotaoFavorito(btn, ehFavorito);
             
-            // Lógica de Agendamento de Notificação
             const blocoAlvo = appState.todosBlocos.find(b => b.id === blocoId);
             if (blocoAlvo) {
                 if (ehFavorito) {
@@ -235,7 +217,6 @@ function setupEventListeners() {
                 }
             }
             
-            // Se estiver vendo só favoritos, atualiza a lista
             if (appState.filtros.apenasFavoritos) {
                 aplicarFiltros();
             }
@@ -336,22 +317,31 @@ function setupEventListeners() {
         });
     }
 
-    // 9. Botão de Login Google (NOVO)
+    // 9. Botão de Login Google
     const btnLogin = document.getElementById('btn-login');
     if (btnLogin) {
         btnLogin.addEventListener('click', () => {
             const isLogado = btnLogin.classList.contains('logado');
             if (isLogado) {
-                // Se já tá logado, o clique serve para SAIR
                 if(confirm("Deseja desconectar sua conta? Os dados no celular serão mantidos.")) {
                     logout();
                 }
             } else {
-                // Se não tá logado, o clique serve para ENTRAR
                 loginGoogle();
             }
         });
     }
+}
+
+// --- FUNÇÃO AUXILIAR DE NAVEGAÇÃO PARA MAPA ---
+function navegarParaMapaEFiltrar(categoria) {
+    mudarVisualizacao('view-mapa');
+    document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('active'));
+    document.querySelector('a[href="#mapa"]').classList.add('active');
+    setTimeout(() => {
+        window.dispatchEvent(new Event('resize')); 
+        focarCategoriaNoMapa(categoria); 
+    }, 200);
 }
 
 // --- FUNÇÕES DE SUPORTE AOS FILTROS ---
@@ -410,14 +400,11 @@ function inicializarFiltrosUI() {
         chip.addEventListener('click', (e) => {
             const tipo = e.target.dataset.type;
             const valor = e.target.dataset.value;
-
             const grupo = e.target.parentElement;
-            // AQUI ESTAVA O ERRO, CORRIGIDO ABAIXO
             const jaEstavaAtivo = e.target.classList.contains('active');
 
             grupo.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
 
-            // CORREÇÃO: Usar a variável correta 'jaEstavaAtivo'
             if (!jaEstavaAtivo) {
                 e.target.classList.add('active');
                 appState.filtros[tipo] = valor;
@@ -461,7 +448,6 @@ function aplicarFiltros() {
     const favoritosIds = getFavoritos();
 
     appState.blocosFiltrados = appState.todosBlocos.filter(bloco => {
-        // 1. Busca por Texto
         if (filtros.termoBusca) {
             const termo = filtros.termoBusca;
             const nomeMatch = bloco.normalized_name.includes(termo);
@@ -470,24 +456,20 @@ function aplicarFiltros() {
             if (!nomeMatch && !bairroMatch) return false;
         }
 
-        // 2. Apenas Favoritos
         if (filtros.apenasFavoritos) {
             if (!favoritosIds.includes(bloco.id)) return false;
         }
 
-        // 3. Filtro de DIA
         if (filtros.dia) {
             if (bloco.date !== filtros.dia) return false;
         }
 
-        // 4. Filtro de ESTILO
         if (filtros.estilo) {
             if (!bloco.musical_style) return false;
             const estilosBloco = bloco.musical_style.map(s => s.toLowerCase());
             if (!estilosBloco.includes(filtros.estilo)) return false;
         }
 
-        // 5. Filtro de TURNO
         if (filtros.turno && bloco.time) {
             const hora = parseInt(bloco.time.split(':')[0], 10);
             if (filtros.turno === 'manha') {
@@ -502,7 +484,6 @@ function aplicarFiltros() {
         return true;
     });
 
-    // Atualiza a UI
     const viewAtiva = document.querySelector('.active-view');
     if (viewAtiva && viewAtiva.id === 'view-mapa') {
         atualizarMarcadores(appState.blocosFiltrados);
@@ -549,6 +530,45 @@ function verificarRoteiroCompartilhado() {
             }, 500);
         }
     }
+}
+
+// --- FUNÇÃO PARA PROCESSAR ATALHOS (APP SHORTCUTS) [NOVO] ---
+function verificarAcoesDeAtalho() {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+
+    if (!action) return;
+
+    console.log(`🚀 App iniciado via atalho: ${action}`);
+
+    // Limpa a URL para evitar re-execução ao recarregar
+    const novaUrl = window.location.pathname + window.location.hash;
+    window.history.replaceState({}, document.title, novaUrl);
+
+    // Pequeno delay para garantir que a UI e o Mapa carregaram
+    setTimeout(() => {
+        // Reseta estados de navegação
+        document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('active'));
+
+        switch (action) {
+            case 'banheiros':
+                // Abre o mapa e foca nos banheiros
+                navegarParaMapaEFiltrar('wc');
+                break;
+
+            case 'sos':
+                // Vai para a tela de guia/ajuda
+                mudarVisualizacao('view-guia');
+                document.querySelector('a[href="#guia"]').classList.add('active');
+                break;
+
+            case 'agora':
+                // Vai para a lista principal
+                mudarVisualizacao('view-explorar');
+                document.querySelector('a[href="#explorar"]').classList.add('active');
+                break;
+        }
+    }, 600); // 600ms para garantir renderização do DOM
 }
 
 function setupOfflineIndicator() {
