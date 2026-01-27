@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - VERSÃO FINAL (Com Vibe Check)
+   Camada de Interface - VERSÃO FINAL (Com Vibe Check e Uber Deep Link)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn } from './storage.js';
@@ -109,12 +109,27 @@ export function mostrarDetalhes(bloco) {
     const checkinText = jaFui ? 'Fui e sobrevivi!' : 'Marcar presença ("Eu fui!")';
     const checkinIcon = jaFui ? 'fas fa-check-circle' : 'far fa-circle';
 
+    // Link do Google Maps (Existente)
     let mapsUrl;
     if (bloco.lat && bloco.lng) {
         mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${bloco.lat},${bloco.lng}&travelmode=walking`;
     } else {
         const query = encodeURIComponent((bloco.location || bloco.name) + " Belo Horizonte");
         mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+    }
+
+    // [NOVO] Link do Uber ("Me Leva")
+    let btnUberHtml = '';
+    if (bloco.lat && bloco.lng) {
+        const nickname = encodeURIComponent(bloco.name);
+        // Deep Link Universal: Abre o app se instalado, senão abre o site mobile
+        const uberUrl = `https://m.uber.com/ul/?action=setPickup&client_id=nu_carnaval&pickup=my_location&dropoff[latitude]=${bloco.lat}&dropoff[longitude]=${bloco.lng}&dropoff[nickname]=${nickname}`;
+        
+        btnUberHtml = `
+            <a href="${uberUrl}" class="detalhe-mapa-btn" style="background-color: #000000; color: #FFFFFF; border-color: #000000; margin-top: 12px;">
+               <i class="fab fa-uber"></i> Chamar Uber
+            </a>
+        `;
     }
 
     // HTML Base (Hero + Mapa + Vibe Check)
@@ -163,6 +178,8 @@ export function mostrarDetalhes(bloco) {
             <a href="${mapsUrl}" target="_blank" class="detalhe-mapa-btn">
                <i class="fas fa-location-arrow"></i> Como chegar (GPS)
             </a>
+            
+            ${btnUberHtml}
         </div>
 
         <div class="vibe-section utility-card">
