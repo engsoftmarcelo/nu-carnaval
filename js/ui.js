@@ -1,11 +1,17 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - VERSÃO FINAL (Com Modo Demo Secreto)
+   Camada de Interface - VERSÃO FINAL (Com Vibe Check)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn } from './storage.js';
 import { getPrevisaoTempo } from './weather.js';
 import { renderDetalheMap } from './map.js'; 
+// --- NOVOS IMPORTS DO FIREBASE ---
+import { getAuth } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+import { enviarVibe, monitorarVibe } from './firebase.js';
+
+// Variável para controlar o listener do Vibe Check (evita duplicação)
+let unsubscribeVibe = null;
 
 /**
  * Renderiza a lista de blocos padrão (Grid de Cards).
@@ -88,6 +94,12 @@ async function atualizarClimaDosCards(blocos) {
  * Exibe a tela de detalhes.
  */
 export function mostrarDetalhes(bloco) {
+    // 1. Limpa listener anterior se existir (para não misturar blocos)
+    if (unsubscribeVibe) {
+        unsubscribeVibe();
+        unsubscribeVibe = null;
+    }
+
     const container = document.getElementById('detalhes-conteudo');
     const estilos = Array.isArray(bloco.musical_style) ? bloco.musical_style.join(', ') : 'Diversos';
     
@@ -105,6 +117,7 @@ export function mostrarDetalhes(bloco) {
         mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
     }
 
+    // HTML Base (Hero + Mapa + Vibe Check)
     container.innerHTML = `
         <div class="detalhe-hero">
             <h1 class="detalhe-titulo">${bloco.name}</h1>
@@ -151,6 +164,35 @@ export function mostrarDetalhes(bloco) {
                <i class="fas fa-location-arrow"></i> Como chegar (GPS)
             </a>
         </div>
+
+        <div class="vibe-section utility-card">
+            <h3 style="color: var(--color-primary);"><i class="fas fa-satellite-dish"></i> Vibe Check (Ao Vivo)</h3>
+            <p style="font-size: 0.9rem; margin-bottom: 12px;">O que tá rolando agora? (Últimos 30min)</p>
+            
+            <div id="vibe-display" class="vibe-display loading">
+                <span class="vibe-status">Carregando...</span>
+                <div class="vibe-badges"></div>
+            </div>
+
+            <div id="vibe-controls" class="vibe-controls">
+                ${ getAuth().currentUser ? `
+                    <button class="btn-vibe btn-fogo" data-tipo="fogo">
+                        🔥<br>Fervendo
+                    </button>
+                    <button class="btn-vibe btn-morto" data-tipo="morto">
+                        💀<br>Morgado
+                    </button>
+                    <button class="btn-vibe btn-policia" data-tipo="policia">
+                        👮<br>Polícia
+                    </button>
+                ` : `
+                    <div class="login-lock">
+                        <i class="fas fa-lock"></i>
+                        <span>Faça login para enviar updates!</span>
+                    </div>
+                `}
+            </div>
+        </div>
         
         <div style="height: 100px;"></div>`;
 
@@ -159,6 +201,50 @@ export function mostrarDetalhes(bloco) {
     setTimeout(() => {
         renderDetalheMap(bloco);
     }, 100);
+
+    // --- LÓGICA DO VIBE CHECK ---
+    const displayEl = document.getElementById('vibe-display');
+    const statusEl = displayEl.querySelector('.vibe-status');
+    const badgesEl = displayEl.querySelector('.vibe-badges');
+
+    // Inicia Monitoramento
+    unsubscribeVibe = monitorarVibe(bloco.id, (data) => {
+        displayEl.classList.remove('loading');
+        
+        statusEl.textContent = data.statusTexto;
+        
+        // Cores do Card
+        displayEl.className = 'vibe-display'; 
+        if (data.score > 3) displayEl.classList.add('vibe-hot');
+        else if (data.score < -1) displayEl.classList.add('vibe-dead');
+        else displayEl.classList.add('vibe-neutral');
+
+        // Badges
+        badgesEl.innerHTML = '';
+        if (data.temPolicia) {
+            badgesEl.innerHTML += `<span class="badge-policia">👮 Policiamento</span>`;
+        }
+        if (data.total > 0) {
+            badgesEl.innerHTML += `<span class="badge-count">${data.total} votos</span>`;
+        }
+    });
+
+    // Listeners dos Botões
+    const botoes = document.querySelectorAll('.btn-vibe');
+    botoes.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const tipo = btn.dataset.tipo;
+            btn.classList.add('sending'); // Feedback visual (CSS)
+            
+            const sucesso = await enviarVibe(bloco.id, tipo);
+            
+            if (sucesso) {
+                botoes.forEach(b => b.disabled = true);
+                setTimeout(() => botoes.forEach(b => b.disabled = false), 5000); // Anti-spam 5s
+            }
+            btn.classList.remove('sending');
+        });
+    });
 }
 
 export function mudarVisualizacao(viewId) {
@@ -188,7 +274,6 @@ export function mudarVisualizacao(viewId) {
         window.scrollTo({ top: 0, behavior: 'auto' });
     }
 
-    // --- RENDERIZA O BOTÃO DE SIMULAÇÃO APENAS NA ABA AJUDA ---
     if (viewId === 'view-guia') {
         renderBotaoNotificacao();
     }
@@ -382,7 +467,6 @@ function renderBotaoNotificacao() {
     
     // --- PROTEÇÃO DE MODO DEMO ---
     const params = new URLSearchParams(window.location.search);
-    // Se NÃO tiver '?demo=true' na URL, sai da função e não desenha o botão
     if (!params.has('demo')) return;
     // -----------------------------
 

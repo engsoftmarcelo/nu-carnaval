@@ -1019,3 +1019,131 @@ h1, h2, h3 {
     font-weight: 800;
     text-transform: uppercase;
 }
+
+/* ==========================================================================
+   VIBE CHECK (Real-Time Feed)
+   ========================================================================== */
+
+.vibe-section {
+    margin-top: 16px;
+    border: 2px solid var(--color-asphalt);
+    box-shadow: 4px 4px 0px var(--color-asphalt) !important;
+}
+
+/* O Display (Termômetro) */
+.vibe-display {
+    background-color: #EEE;
+    border: 2px solid var(--color-asphalt);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 16px;
+    transition: all 0.3s;
+}
+
+.vibe-status {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    display: block;
+}
+
+/* Estados do Display */
+.vibe-display.vibe-hot {
+    background-color: #FFE5E5;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+.vibe-display.vibe-dead {
+    background-color: #E0E0E0;
+    color: #666;
+    opacity: 0.8;
+}
+.vibe-display.vibe-neutral {
+    background-color: #FFF;
+    color: var(--color-asphalt);
+}
+
+.vibe-badges {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.badge-policia {
+    background: #002244;
+    color: #FFF;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    animation: pulse 2s infinite;
+}
+
+.badge-count {
+    background: #DDD;
+    color: #333;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* Botões de Ação */
+.vibe-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+}
+
+.btn-vibe {
+    padding: 12px 8px;
+    border: 2px solid var(--color-asphalt);
+    border-radius: 8px;
+    background: var(--color-surface);
+    font-weight: 800;
+    font-size: 0.9rem;
+    cursor: pointer;
+    box-shadow: 2px 2px 0px var(--color-asphalt);
+    transition: transform 0.1s;
+    line-height: 1.2;
+}
+
+.btn-vibe:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+.btn-vibe:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+}
+
+/* Cores dos Botões */
+.btn-fogo { color: var(--color-primary); }
+.btn-fogo:hover { background: #FFE5E5; }
+
+.btn-morto { color: #555; }
+.btn-morto:hover { background: #EEE; }
+
+.btn-policia { color: #0044CC; }
+.btn-policia:hover { background: #E6F0FF; }
+
+/* Estado de Bloqueio (Não logado) */
+.login-lock {
+    grid-column: span 3;
+    text-align: center;
+    padding: 12px;
+    background: #EEE;
+    border: 1px dashed #999;
+    color: #666;
+    font-weight: bold;
+    border-radius: 8px;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}

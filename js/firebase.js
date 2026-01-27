@@ -1,12 +1,31 @@
 /* ==========================================================================
-   js/firebase.js - VERSÃO FINAL (CDN + Test Mode + Push Notifications)
+   js/firebase.js - VERSÃO COMPLETA (Auth + Sync + Push + Vibe Check)
    Projeto: nu-carnaval-2026-e9c3b
    SDK: v12.8.0
    ========================================================================== */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+import { 
+    getAuth, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    signOut, 
+    onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+import { 
+    getFirestore, 
+    doc, 
+    setDoc, 
+    getDoc, 
+    enableIndexedDbPersistence,
+    collection, 
+    addDoc, 
+    query, 
+    where, 
+    onSnapshot, 
+    orderBy, 
+    Timestamp 
+} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 import { getFavoritos, importarFavoritos } from './storage.js';
 
 // --- SUAS CHAVES DO PROJETO ---
@@ -29,22 +48,18 @@ try {
     auth = getAuth(app);
     db = getFirestore(app);
 
-    // --- IMPLEMENTAÇÃO 2.1.2: Persistência de Dados (Offline) ---
-    // Habilita o cache local do Firestore para funcionar sem rede
+    // --- Persistência de Dados (Offline) ---
     enableIndexedDbPersistence(db)
         .then(() => {
             console.log("💾 Persistência do Firestore: ATIVADA");
         })
         .catch((err) => {
             if (err.code == 'failed-precondition') {
-                // Múltiplas abas abertas podem bloquear a persistência
                 console.warn('Persistência falhou: Múltiplas abas abertas.');
             } else if (err.code == 'unimplemented') {
-                // Navegador não suporta (ex: modo anônimo em alguns casos)
                 console.warn('Persistência não suportada neste navegador.');
             }
         });
-    // ------------------------------------------------------------
 
     provider = new GoogleAuthProvider();
     firebaseInicializado = true;
@@ -52,6 +67,10 @@ try {
 } catch (e) {
     console.error("🔥 Erro crítico ao inicializar Firebase:", e);
 }
+
+// ==========================================================================
+// 1. AUTENTICAÇÃO E SINCRONIZAÇÃO
+// ==========================================================================
 
 // --- LOGIN ---
 export async function loginGoogle() {
@@ -76,9 +95,9 @@ export async function loginGoogle() {
         console.error("❌ Erro no login:", error);
         
         if (error.code === 'auth/unauthorized-domain') {
-            alert("ERRO DE DOMÍNIO: Adicione a URL deste site (ou localhost) no Firebase Console > Authentication > Settings > Authorized Domains.");
+            alert("ERRO DE DOMÍNIO: Adicione a URL deste site no Firebase Console > Authentication > Authorized Domains.");
         } else if (error.code === 'auth/operation-not-allowed') {
-            alert("ERRO: O Login com Google não está ativado. Vá no Firebase Console > Authentication e ative o provedor Google.");
+            alert("ERRO: O Login com Google não está ativado no Firebase Console.");
         } else if (error.code === 'auth/popup-closed-by-user') {
             console.log("Login cancelado pelo usuário.");
         } else {
@@ -112,7 +131,7 @@ export function monitorarAuth(callbackBotao) {
     });
 }
 
-// --- SALVAR NA NUVEM (Ao clicar no coração) ---
+// --- SALVAR NA NUVEM (Favoritos) ---
 export async function salvarNaNuvem(favoritosArray) {
     if (!auth?.currentUser) return; // Só salva se logado
     
@@ -157,19 +176,20 @@ async function sincronizarDados(user) {
     }
 }
 
-// --- PUSH NOTIFICATIONS: Salvar Token no Firestore (NOVO - Seção 2.2.2) ---
+// ==========================================================================
+// 2. PUSH NOTIFICATIONS
+// ==========================================================================
+
 export async function salvarTokenPush(subscription) {
-    // Clona o objeto de subscrição para garantir que é um JSON puro
     const subJSON = JSON.parse(JSON.stringify(subscription));
 
     try {
-        // Se não houver utilizador logado, usa um ID anónimo baseado no timestamp
         const docId = auth.currentUser ? auth.currentUser.uid : 'anon_' + Date.now();
         const docRef = doc(db, "push_subscribers", docId);
         
         await setDoc(docRef, {
             subscription: subJSON,
-            topics: ['geral', 'metro', 'emergencia'], // Tópicos padrão
+            topics: ['geral', 'metro', 'emergencia'],
             updated_at: new Date().toISOString(),
             user_id: auth.currentUser ? auth.currentUser.uid : null,
             platform: navigator.platform || 'unknown'
@@ -181,4 +201,82 @@ export async function salvarTokenPush(subscription) {
         console.error("Erro ao salvar token push:", e);
         return false;
     }
+}
+
+// ==========================================================================
+// 3. VIBE CHECK (Real-Time Feed) [NOVO]
+// ==========================================================================
+
+/**
+ * Envia um status para o bloco atual.
+ * @param {string} blocoId - ID do bloco
+ * @param {string} tipo - 'fogo' | 'morto' | 'policia'
+ */
+export async function enviarVibe(blocoId, tipo) {
+    if (!auth.currentUser) {
+        alert("Faça login para dar o papo!");
+        return false;
+    }
+
+    try {
+        const updatesRef = collection(db, "status_updates");
+        await addDoc(updatesRef, {
+            blocoId: blocoId,
+            userId: auth.currentUser.uid,
+            tipo: tipo,
+            timestamp: Timestamp.now() // Data do servidor
+        });
+        console.log(`🔥 Vibe '${tipo}' enviada para ${blocoId}`);
+        return true;
+    } catch (e) {
+        console.error("Erro ao enviar vibe:", e);
+        return false;
+    }
+}
+
+/**
+ * Monitora a vibe de um bloco nos últimos 30 minutos.
+ * @param {string} blocoId 
+ * @param {function} callback - Recebe objeto { score, total, temPolicia, statusTexto }
+ * @returns {function} unsubscribe - Função para parar de ouvir
+ */
+export function monitorarVibe(blocoId, callback) {
+    // Define janela de tempo (30 minutos atrás)
+    const trintaMinAtras = Timestamp.fromMillis(Date.now() - 30 * 60 * 1000);
+    const updatesRef = collection(db, "status_updates");
+
+    // Query composta: Bloco + Tempo Recente
+    // Nota: Isso pode exigir a criação de um índice no console do Firestore na primeira execução.
+    const q = query(
+        updatesRef,
+        where("blocoId", "==", blocoId),
+        where("timestamp", ">=", trintaMinAtras),
+        orderBy("timestamp", "desc")
+    );
+
+    // Escuta em tempo real
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        let score = 0; // Termômetro (-10 a +10)
+        let total = 0;
+        let temPolicia = false;
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            total++;
+            
+            if (data.tipo === 'fogo') score += 1;
+            if (data.tipo === 'morto') score -= 1;
+            if (data.tipo === 'policia') temPolicia = true;
+        });
+
+        // Lógica do Status Texto
+        let statusTexto = "Morno";
+        if (score > 5) statusTexto = "PEGANDO FOGO 🔥";
+        else if (score < -2) statusTexto = "Morgado 💀";
+        else if (total === 0) statusTexto = "Sem dados";
+
+        callback({ score, total, temPolicia, statusTexto });
+    });
+
+    return unsubscribe;
 }
