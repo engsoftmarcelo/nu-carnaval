@@ -1,12 +1,11 @@
 /* ==========================================================================
-   js/firebase.js - VERSÃO FINAL (CDN + Test Mode)
+   js/firebase.js - VERSÃO FINAL (CDN + Test Mode + Push Notifications)
    Projeto: nu-carnaval-2026-e9c3b
    SDK: v12.8.0
    ========================================================================== */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
-// ATUALIZADO: Adicionado 'enableIndexedDbPersistence' aos imports
 import { getFirestore, doc, setDoc, getDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 import { getFavoritos, importarFavoritos } from './storage.js';
 
@@ -155,5 +154,31 @@ async function sincronizarDados(user) {
             nome: user.displayName,
             criado_em: new Date().toISOString()
         });
+    }
+}
+
+// --- PUSH NOTIFICATIONS: Salvar Token no Firestore (NOVO - Seção 2.2.2) ---
+export async function salvarTokenPush(subscription) {
+    // Clona o objeto de subscrição para garantir que é um JSON puro
+    const subJSON = JSON.parse(JSON.stringify(subscription));
+
+    try {
+        // Se não houver utilizador logado, usa um ID anónimo baseado no timestamp
+        const docId = auth.currentUser ? auth.currentUser.uid : 'anon_' + Date.now();
+        const docRef = doc(db, "push_subscribers", docId);
+        
+        await setDoc(docRef, {
+            subscription: subJSON,
+            topics: ['geral', 'metro', 'emergencia'], // Tópicos padrão
+            updated_at: new Date().toISOString(),
+            user_id: auth.currentUser ? auth.currentUser.uid : null,
+            platform: navigator.platform || 'unknown'
+        }, { merge: true });
+        
+        console.log("🔔 Token Push salvo no Firestore!");
+        return true;
+    } catch (e) {
+        console.error("Erro ao salvar token push:", e);
+        return false;
     }
 }

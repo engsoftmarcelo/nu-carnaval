@@ -110,3 +110,64 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+/* ==========================================================================
+   PUSH NOTIFICATIONS (Server-Side) - Implementação da Seção 2.2.2
+   ========================================================================== */
+
+self.addEventListener('push', function(event) {
+  console.log('[SW] Push Recebido');
+
+  let data = { title: 'Nu! Carnaval', body: 'Nova atualização!', url: './index.html' };
+
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch(e) {
+      // Fallback para texto simples se não for JSON
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: './assets/icons/icon-192.png',
+    badge: './assets/icons/icon-192.png', // Pequeno ícone na barra de status (Android)
+    vibrate: [100, 50, 100],
+    data: {
+      url: data.url || './index.html' // URL para abrir ao clicar
+    },
+    tag: data.tag || 'geral', // Agrupamento: notificações com mesma tag se substituem
+    renotify: true,
+    actions: [
+      { action: 'explore', title: 'Ver Agora' },
+      { action: 'close', title: 'Fechar' }
+    ]
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+
+  if (event.action === 'close') return;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      // 1. Se a app já estiver aberta em alguma aba, foca nela
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client.url === event.notification.data.url && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // 2. Se não estiver aberta, abre uma nova janela
+      if (clients.openWindow) {
+        return clients.openWindow(event.notification.data.url);
+      }
+    })
+  );
+});

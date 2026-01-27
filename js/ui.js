@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - VERSÃO CORRIGIDA (Rota GPS -> Concentração)
+   Camada de Interface - VERSÃO FINAL (Com Modo Demo Secreto)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn } from './storage.js';
@@ -86,7 +86,6 @@ async function atualizarClimaDosCards(blocos) {
 
 /**
  * Exibe a tela de detalhes.
- * CORREÇÃO: Link do Google Maps agora traça rota "Minha Localização -> Bloco".
  */
 export function mostrarDetalhes(bloco) {
     const container = document.getElementById('detalhes-conteudo');
@@ -98,14 +97,10 @@ export function mostrarDetalhes(bloco) {
     const checkinText = jaFui ? 'Fui e sobrevivi!' : 'Marcar presença ("Eu fui!")';
     const checkinIcon = jaFui ? 'fas fa-check-circle' : 'far fa-circle';
 
-    // --- CORREÇÃO DO LINK DO MAPA ---
     let mapsUrl;
     if (bloco.lat && bloco.lng) {
-        // Usa a API universal "dir" (Directions). 
-        // Sem o parâmetro "origin", ele assume a localização atual do GPS.
         mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${bloco.lat},${bloco.lng}&travelmode=walking`;
     } else {
-        // Fallback para busca textual se não tiver coordenadas
         const query = encodeURIComponent((bloco.location || bloco.name) + " Belo Horizonte");
         mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
     }
@@ -191,6 +186,11 @@ export function mudarVisualizacao(viewId) {
         target.classList.remove('view-hidden');
         target.classList.add('active-view');
         window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+
+    // --- RENDERIZA O BOTÃO DE SIMULAÇÃO APENAS NA ABA AJUDA ---
+    if (viewId === 'view-guia') {
+        renderBotaoNotificacao();
     }
 }
 
@@ -371,4 +371,75 @@ export function renderStats(count, containerId = 'stats-container') {
             <div class="stats-icon"><i class="fas fa-medal"></i></div>
         </div>
     `;
+}
+
+/* ==========================================================================
+   UI DE SIMULAÇÃO DE CRISE (Link Secreto)
+   Só mostra o botão se a URL terminar com ?demo=true
+   ========================================================================== */
+function renderBotaoNotificacao() {
+    const container = document.querySelector('.utility-list');
+    
+    // --- PROTEÇÃO DE MODO DEMO ---
+    const params = new URLSearchParams(window.location.search);
+    // Se NÃO tiver '?demo=true' na URL, sai da função e não desenha o botão
+    if (!params.has('demo')) return;
+    // -----------------------------
+
+    // Evita duplicar se já existir
+    if (!container || document.getElementById('btn-ativar-push')) return;
+
+    const btn = document.createElement('article');
+    btn.id = 'btn-ativar-push';
+    btn.className = 'utility-card';
+    btn.style.cursor = 'pointer';
+    btn.style.border = '2px solid var(--color-primary)';
+    
+    btn.innerHTML = `
+        <h3 style="color: var(--color-primary); display:flex; align-items:center; gap:10px;">
+            <i class="fas fa-bell"></i> Testar Alertas de Crise
+        </h3>
+        <p>MODO DEMO: Simulação para apresentação.</p>
+    `;
+
+    btn.onclick = async () => {
+        const { NotificationManager } = await import('./notifications.js');
+        const permitido = await NotificationManager.solicitarPermissao();
+        
+        if (permitido) {
+            btn.style.borderColor = 'var(--color-success)';
+            btn.style.cursor = 'default';
+            btn.onclick = null;
+
+            btn.innerHTML = `
+                <h3 style="color: var(--color-success);">
+                    <i class="fas fa-check-circle"></i> Alertas Ativados (Demo)
+                </h3>
+                <p>Clique abaixo para simular uma crise.</p>
+                <button id="btn-simular-agora" style="
+                    margin-top:12px; 
+                    width:100%; 
+                    background:var(--color-primary); 
+                    color:white; 
+                    border:2px solid black; 
+                    padding:12px; 
+                    font-weight:bold; 
+                    text-transform:uppercase; 
+                    cursor:pointer; 
+                    box-shadow: 4px 4px 0px black;
+                ">
+                    <i class="fas fa-exclamation-triangle"></i> Disparar Alerta Agora
+                </button>
+            `;
+
+            document.getElementById('btn-simular-agora').onclick = (e) => {
+                e.stopPropagation();
+                NotificationManager.simularAlertaCrise();
+            };
+        } else {
+            alert('Você precisa permitir as notificações no navegador.');
+        }
+    };
+
+    container.insertBefore(btn, container.firstChild);
 }
