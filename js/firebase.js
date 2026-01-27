@@ -6,7 +6,8 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+// ATUALIZADO: Adicionado 'enableIndexedDbPersistence' aos imports
+import { getFirestore, doc, setDoc, getDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 import { getFavoritos, importarFavoritos } from './storage.js';
 
 // --- SUAS CHAVES DO PROJETO ---
@@ -28,6 +29,24 @@ try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
+
+    // --- IMPLEMENTAÇÃO 2.1.2: Persistência de Dados (Offline) ---
+    // Habilita o cache local do Firestore para funcionar sem rede
+    enableIndexedDbPersistence(db)
+        .then(() => {
+            console.log("💾 Persistência do Firestore: ATIVADA");
+        })
+        .catch((err) => {
+            if (err.code == 'failed-precondition') {
+                // Múltiplas abas abertas podem bloquear a persistência
+                console.warn('Persistência falhou: Múltiplas abas abertas.');
+            } else if (err.code == 'unimplemented') {
+                // Navegador não suporta (ex: modo anônimo em alguns casos)
+                console.warn('Persistência não suportada neste navegador.');
+            }
+        });
+    // ------------------------------------------------------------
+
     provider = new GoogleAuthProvider();
     firebaseInicializado = true;
     console.log("🔥 Firebase (nu-carnaval-2026-e9c3b) conectado! v12.8.0");
@@ -110,6 +129,8 @@ export async function salvarNaNuvem(favoritosArray) {
 // --- SINCRONIZAÇÃO INTERNA ---
 async function sincronizarDados(user) {
     const userRef = doc(db, "users", user.uid);
+    
+    // Graças à persistência ativada, o getDoc funciona offline buscando do cache local
     const docSnap = await getDoc(userRef);
     const favoritosLocais = getFavoritos(); // Pega do storage.js
     
