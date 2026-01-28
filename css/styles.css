@@ -165,12 +165,7 @@ h1, h2, h3 {
 
 .chip.active {
     background-color: var(--color-asphalt);
-    
-    /* CORREÇÃO CRÍTICA: Texto sempre visível no chip ativo */
     color: var(--color-cta); 
-    
-    /* Em modo escuro, o fundo vira branco e o texto amarelo fica ruim. 
-       Abaixo temos um override específico para Dark Mode */
     box-shadow: 3px 3px 0px var(--color-cta);
     border-color: var(--color-asphalt);
 }
@@ -298,10 +293,7 @@ h1, h2, h3 {
 .status-live {
     display: inline-block;
     background-color: var(--color-live);
-    
-    /* CORREÇÃO CRÍTICA: Texto sempre PRETO no fundo AMARELO */
     color: var(--color-cta-text) !important; 
-    
     font-family: var(--font-display);
     font-size: 1rem;
     padding: 4px 8px;
@@ -415,7 +407,6 @@ h1, h2, h3 {
 .btn-emergency.pol { background-color: var(--color-asphalt); }
 .btn-emergency.samu { background-color: var(--color-error); }
 
-/* CORREÇÃO PARA BOTÃO POLÍCIA EM DARK MODE: Fundo claro (asphalt) precisa texto escuro */
 @media (prefers-color-scheme: dark) {
     .btn-emergency.pol { 
         color: #000; 
@@ -462,43 +453,25 @@ h1, h2, h3 {
     color: var(--color-asphalt);
 }
 
-/* --- 9. Dark Mode Overrides Específicos --- */
+/* --- 9. Dark Mode Overrides --- */
 @media (prefers-color-scheme: dark) {
     .app-header, .bottom-nav, .detalhes-header {
-        background-color: rgba(30, 30, 30, 0.95); /* Superfície Dark */
+        background-color: rgba(30, 30, 30, 0.95);
         border-color: var(--color-border);
     }
-    
-    /* Correção do Header Branco no Dark Mode */
-    .app-header {
-        background-color: var(--color-surface); 
-    }
-
-    .bloco-card {
-        box-shadow: 4px 4px 0px #000; /* Sombra preta no Dark Mode fica melhor */
-    }
-    
+    .app-header { background-color: var(--color-surface); }
+    .bloco-card { box-shadow: 4px 4px 0px #000; }
     #search-input {
         background-color: #252525;
         border-color: #555;
         color: #FFF;
     }
-    
-    .nav-item.active {
-        background-color: rgba(255, 255, 255, 0.05);
-    }
-
-    /* Correção CHIPS ATIVOS no Dark Mode */
-    /* Fundo vira branco (asphalt), Texto vira preto para ler */
+    .nav-item.active { background-color: rgba(255, 255, 255, 0.05); }
     .chip.active {
         color: #000 !important;
         border-color: #FFF;
     }
-    
-    /* Botão de Filtro - ícone branco no dark */
-    #filter-toggle {
-        color: #FFF;
-    }
+    #filter-toggle { color: #FFF; }
 }
 
 /* --- 10. View de Detalhes --- */
@@ -553,101 +526,6 @@ h1, h2, h3 {
 .btn-icon-back:active, .btn-icon-share:active { 
     transform: translate(2px, 2px); 
     box-shadow: none; 
-}
-
-.detalhe-hero {
-    background-color: var(--color-surface);
-    border: 2px solid var(--color-asphalt);
-    border-radius: var(--radius-md);
-    padding: 24px;
-    box-shadow: 6px 6px 0px var(--color-asphalt);
-    margin-bottom: 24px;
-}
-
-.detalhe-titulo {
-    font-size: 2rem;
-    line-height: 1;
-    margin-bottom: 12px;
-    color: var(--color-primary);
-    text-transform: uppercase;
-}
-
-.detalhe-meta {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-top: 24px;
-}
-
-.meta-box {
-    background: var(--color-bg);
-    border: 2px solid var(--color-asphalt);
-    border-radius: 8px;
-    padding: 12px;
-    text-align: center;
-}
-
-.meta-label {
-    font-size: 0.75rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: var(--color-text-light);
-    display: block;
-    margin-bottom: 4px;
-}
-.meta-valor {
-    font-size: 1.1rem;
-    font-weight: 800;
-    color: var(--color-asphalt);
-}
-
-.detalhe-mapa-btn {
-    display: block;
-    width: 100%;
-    background-color: var(--color-cta);
-    
-    /* CORREÇÃO: Texto Preto no Botão Amarelo */
-    color: var(--color-cta-text) !important;
-    
-    border: 2px solid var(--color-asphalt);
-    padding: 16px;
-    font-family: var(--font-display);
-    font-size: 1.2rem;
-    text-align: center;
-    margin-top: 24px;
-    box-shadow: 4px 4px 0px var(--color-asphalt);
-    text-decoration: none;
-    font-weight: 800;
-}
-.detalhe-mapa-btn:active { 
-    transform: translate(2px, 2px); 
-    box-shadow: 2px 2px 0px var(--color-asphalt); 
-}
-
-/* --- 11. Clima / Previsão do Tempo --- */
-.weather-placeholder {
-    min-height: 24px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.95rem;
-    font-weight: 700;
-    margin: 6px 0;
-    transition: opacity 0.3s;
-}
-
-.weather-placeholder.clima-sol i {
-    color: #FF8C00; 
-    filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.2));
-}
-
-.weather-placeholder.clima-chuva i {
-    color: #4A90E2; 
-}
-
-.weather-placeholder span {
-    color: var(--color-asphalt);
-    font-family: var(--font-body);
 }
 
 /* ==========================================================================
@@ -730,10 +608,7 @@ h1, h2, h3 {
     width: 100%;
     padding: 16px;
     background-color: var(--color-cta); 
-    
-    /* CORREÇÃO: Texto Preto no Botão Amarelo */
     color: var(--color-cta-text) !important;
-    
     border: var(--border-width) solid var(--color-asphalt);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-hard);
@@ -839,13 +714,8 @@ h1, h2, h3 {
     left: 0;
     width: 100%;
     height: 40px; 
-    background-color: var(--color-asphalt); 
-    
-    /* Texto Amarelo no Fundo Asphalt (Branco no Dark Mode) -> Fica ruim */
-    /* FIX: Forçar cores fixas aqui para garantir legibilidade */
     background-color: #1A1A1A !important;
     color: #CCFF00 !important;
-    
     display: flex;
     align-items: center;
     justify-content: center;
@@ -924,8 +794,6 @@ h1, h2, h3 {
     box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
     transform: rotate(-1deg);
     display: inline-block;
-    
-    /* CORREÇÃO: Texto preto na highlight amarela */
     color: #000 !important;
 }
 
@@ -986,10 +854,7 @@ h1, h2, h3 {
    ========================================================================== */
 .aviso-programacao {
     background-color: var(--color-cta); 
-    
-    /* CORREÇÃO: Texto sempre PRETO no fundo AMARELO */
     color: var(--color-cta-text) !important;       
-    
     border: var(--border-width) solid var(--color-asphalt);
     border-radius: var(--radius-sm);
     padding: 16px;
@@ -1067,7 +932,6 @@ h1, h2, h3 {
     color: var(--color-asphalt);
 }
 
-/* No dark mode, vibe neutral pode ficar com texto branco se asphalt inverter. */
 @media (prefers-color-scheme: dark) {
     .vibe-display.vibe-neutral {
         background-color: #333;
@@ -1167,32 +1031,24 @@ h1, h2, h3 {
 
 /* ==========================================================================
    GERADOR DE STORIES (NEO-BRUTALIST POSTER)
-   Layout fixo 1080x1920 para geração de imagem via canvas
-   CORES FIXAS (HARDCODED) PARA GARANTIR VISUALIZAÇÃO CORRETA EM QUALQUER TEMA
    ========================================================================== */
 
 #poster-stories {
     width: 1080px;
     height: 1920px;
-    
-    /* Força fundo claro (Papel) mesmo em Dark Mode */
     background-color: #F0F0EB !important; 
-    color: #1A1A1A !important; /* Garante texto preto no container base */
-    -webkit-print-color-adjust: exact; /* Força impressão de cores exatas */
+    color: #1A1A1A !important; 
+    -webkit-print-color-adjust: exact; 
     print-color-adjust: exact;
-
     background-image: 
         radial-gradient(circle at 10% 20%, rgba(255, 42, 0, 0.05) 0%, transparent 20%),
         radial-gradient(circle at 90% 80%, rgba(204, 255, 0, 0.1) 0%, transparent 20%);
-    
     padding: 60px;
-    border: 20px solid #1A1A1A !important; /* Borda Preta */
-    
+    border: 20px solid #1A1A1A !important; 
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    
-    font-family: 'Manrope', sans-serif; /* Define fonte explícita */
+    font-family: 'Manrope', sans-serif; 
     box-sizing: border-box;
     position: relative;
 }
@@ -1219,7 +1075,7 @@ h1, h2, h3 {
 
 .poster-title {
     display: inline-block;
-    background-color: #FF2A00 !important; /* Vermelho Neon Fixo */
+    background-color: #FF2A00 !important;
     color: #FFFFFF !important;
     font-family: 'Anton', sans-serif;
     font-size: 5rem;
@@ -1234,7 +1090,7 @@ h1, h2, h3 {
     margin-top: 30px;
     font-family: 'Permanent Marker', cursive;
     font-size: 2.5rem;
-    color: #6600FF !important; /* Roxo Fixo */
+    color: #6600FF !important; 
     transform: rotate(2deg);
     text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
 }
@@ -1248,29 +1104,25 @@ h1, h2, h3 {
     margin-top: 40px;
 }
 
-/* ============ MUDANÇAS AQUI PARA FUNDO PRETO ============ */
-
 .poster-item {
-    background: #1A1A1A !important; /* FIX: Fundo PRETO Fixo */
-    border: 6px solid #FFFFFF !important; /* FIX: Borda BRANCA */
+    background: #1A1A1A !important; 
+    border: 6px solid #FFFFFF !important; 
     border-radius: 16px;
     padding: 25px 30px;
     box-shadow: 10px 10px 0px #1A1A1A !important;
     display: flex;
     align-items: center;
     gap: 30px;
-    
-    /* FIX: Garante que o texto base seja BRANCO */
     color: #FFFFFF !important; 
 }
 
 .poster-time {
-    background-color: #CCFF00 !important; /* Amarelo Neon Fixo */
+    background-color: #CCFF00 !important;
     color: #1A1A1A !important;
     font-family: 'Anton', sans-serif;
     font-size: 2.5rem;
     padding: 10px 20px;
-    border: 4px solid #FFFFFF !important; /* FIX: Borda BRANCA */
+    border: 4px solid #FFFFFF !important;
     border-radius: 8px;
 }
 
@@ -1282,28 +1134,20 @@ h1, h2, h3 {
     font-size: 2.2rem;
     margin-bottom: 8px;
     line-height: 1.1;
-    
-    /* FIX: Força cor BRANCA no título */
     color: #FFFFFF !important; 
     -webkit-text-fill-color: #FFFFFF !important;
-    
     font-weight: 800;
 }
 
 .poster-info p {
     font-size: 1.4rem;
-    
-    /* FIX: Texto cinza claro para contraste */
     color: #DDDDDD !important; 
-    
     font-weight: 700;
 }
 
 .poster-info i {
-    color: #FF2A00 !important; /* Ícones vermelhos */
+    color: #FF2A00 !important; 
 }
-
-/* ======================================================== */
 
 .poster-footer {
     z-index: 1;
@@ -1379,17 +1223,6 @@ h1, h2, h3 {
     font-size: 0.9rem;
 }
 
-/* ==========================================================================
-   CSS DO DETALHE PERSONALIZADO
-   Adicione ao final de css/styles.css
-   ========================================================================== */
-
-/* Wrapper que recebe a classe do público (ex: .aud-familia) */
-.detalhe-wrapper {
-    /* Garante que a variável exista, fallback para amarelo */
-    --aud-color: var(--color-cta); 
-}
-
 /* Hero Section Turbinada */
 .detalhe-hero {
     background-color: var(--color-surface);
@@ -1399,13 +1232,11 @@ h1, h2, h3 {
     margin-bottom: 24px;
     position: relative;
     overflow: hidden;
-    
     /* A Mágica: Sombra colorida baseada no público */
     box-shadow: 8px 8px 0px var(--aud-color);
     transition: box-shadow 0.3s ease;
 }
 
-/* No Dark Mode, reduzimos um pouco o brilho da sombra se necessário */
 @media (prefers-color-scheme: dark) {
     .detalhe-hero {
         border-color: #FFF;
@@ -1419,7 +1250,6 @@ h1, h2, h3 {
     margin-bottom: 16px;
 }
 
-/* Etiqueta de Público */
 .audience-pill {
     display: inline-flex;
     align-items: center;
@@ -1429,7 +1259,7 @@ h1, h2, h3 {
     font-size: 0.85rem;
     font-weight: 800;
     text-transform: uppercase;
-    color: #000 !important; /* Texto sempre preto para contraste */
+    color: #000 !important; 
     border: 2px solid var(--color-asphalt);
     box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
 }
@@ -1455,13 +1285,12 @@ h1, h2, h3 {
     font-style: italic;
     background: var(--color-bg);
     padding: 12px;
-    border-left: 4px solid var(--aud-color); /* Borda lateral com cor do público */
+    border-left: 4px solid var(--aud-color); 
     margin: 16px 0;
     font-size: 0.95rem;
     color: var(--color-text);
 }
 
-/* Grid de Informações (Data/Hora) */
 .detalhe-grid-info {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1481,7 +1310,7 @@ h1, h2, h3 {
 
 .info-item i {
     font-size: 1.5rem;
-    color: var(--aud-color); /* Ícone com a cor do público */
+    color: var(--aud-color); 
 }
 
 .info-item .label {
@@ -1497,7 +1326,6 @@ h1, h2, h3 {
     color: var(--color-asphalt);
 }
 
-/* Clima no Detalhe */
 .detalhe-clima {
     display: flex;
     align-items: center;
@@ -1511,7 +1339,6 @@ h1, h2, h3 {
 .detalhe-clima.sol { background-color: #FFF8E1; color: #FF8F00; }
 .detalhe-clima.chuva { background-color: #E3F2FD; color: #1565C0; }
 
-/* Mapa e Uber */
 .localizacao-box {
     margin: 16px 0;
 }
@@ -1553,4 +1380,130 @@ h1, h2, h3 {
     border-radius: 4px; /* Estilo Uber */
     text-decoration: none;
     box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+}
+
+/* ==========================================================================
+   ANIMAÇÕES NEO-BRUTALISTAS (ADICIONADO)
+   ========================================================================== */
+
+@keyframes tremelique {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(3deg); }
+    50% { transform: rotate(-3deg); }
+    75% { transform: rotate(1deg); }
+    100% { transform: rotate(0deg); }
+}
+
+/* Aplica o tremelique ao passar o mouse em botões e chips */
+.btn-small:hover, 
+.chip:hover, 
+.btn-emergency:hover,
+.btn-social:hover {
+    animation: tremelique 0.3s ease-in-out;
+    cursor: pointer;
+    box-shadow: 6px 6px 0px var(--color-cta) !important; 
+    border-color: var(--color-asphalt);
+}
+
+@keyframes carimbo {
+    0% { 
+        opacity: 0; 
+        transform: scale(0.8) translateY(20px); 
+    }
+    60% { 
+        opacity: 1; 
+        transform: scale(1.05) translateY(-5px); 
+    }
+    100% { 
+        opacity: 1; 
+        transform: scale(1) translateY(0); 
+    }
+}
+
+/* Aplica a animação aos cards dos blocos */
+.bloco-card {
+    animation: carimbo 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    opacity: 0; 
+}
+
+/* Efeito cascata para os cards */
+.bloco-card:nth-child(1) { animation-delay: 0.1s; }
+.bloco-card:nth-child(2) { animation-delay: 0.2s; }
+.bloco-card:nth-child(3) { animation-delay: 0.3s; }
+.bloco-card:nth-child(4) { animation-delay: 0.4s; }
+.bloco-card:nth-child(5) { animation-delay: 0.5s; }
+.bloco-card:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes letreiro {
+    0% { transform: translateX(10%); }
+    100% { transform: translateX(-100%); }
+}
+
+.aviso-programacao {
+    overflow: hidden;
+    position: relative;
+    white-space: nowrap; 
+}
+
+.aviso-programacao p {
+    display: inline-block;
+    padding-left: 100%; 
+    animation: letreiro 15s linear infinite;
+}
+
+.aviso-programacao:hover p {
+    animation-play-state: paused;
+}
+
+/* ==========================================================================
+   PERSONALIZAÇÃO TOTAL POR PÚBLICO (FINAL DO ARQUIVO)
+   Força cores internas dos detalhes para seguir o público-alvo
+   ========================================================================== */
+
+/* 1. Título do Bloco com a cor do público */
+.detalhe-wrapper .detalhe-titulo {
+    color: var(--aud-color) !important;
+}
+
+/* 2. Botão "Abrir GPS" assume a cor do público */
+.detalhe-wrapper .detalhe-mapa-btn {
+    background-color: var(--aud-color) !important;
+    color: #000 !important; /* Mantém texto preto para contraste brutalista */
+    border-color: #1A1A1A !important;
+    box-shadow: 4px 4px 0px #1A1A1A !important;
+}
+
+/* 3. Títulos das seções internas (Onde é o trem?, Vibe Check) */
+.detalhe-wrapper .utility-card h3 {
+    color: var(--aud-color) !important;
+}
+
+/* 4. Ícones dos títulos das seções */
+.detalhe-wrapper .utility-card h3 i {
+    color: var(--aud-color) !important;
+}
+
+/* 5. Bordas e Sombra dos Cards Utilitários */
+.detalhe-wrapper .utility-card {
+    border: 2px solid var(--aud-color) !important;
+    box-shadow: 4px 4px 0px var(--aud-color) !important;
+}
+
+/* 6. Ícones de Data e Hora */
+.detalhe-wrapper .info-item i {
+    color: var(--aud-color) !important;
+    filter: drop-shadow(1px 1px 0px #000); 
+}
+
+/* 7. Borda dos itens de info */
+.detalhe-wrapper .info-item {
+    border: 1px solid var(--aud-color) !important;
+}
+
+/* 8. Botão de Check-in quando marcado (Fui e sobrevivi) */
+.detalhe-wrapper .btn-checkin.checked {
+    background-color: var(--aud-color) !important;
+    color: #000 !important;
+    border-color: #000 !important;
+    box-shadow: 4px 4px 0px #000 !important;
 }

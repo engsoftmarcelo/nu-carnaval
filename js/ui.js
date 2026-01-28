@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - ATUALIZADO (Com Personalização por Público e Detalhes Turbinados)
+   Camada de Interface - CORRIGIDO (Leitura de Dados do JSON)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn } from './storage.js';
@@ -9,38 +9,63 @@ import { renderDetalheMap } from './map.js';
 import { getAuth } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 import { enviarVibe, monitorarVibe } from './firebase.js';
 
-// Variável para controlar o listener do Vibe Check (evita duplicação)
 let unsubscribeVibe = null;
 
 /**
- * Retorna a configuração de estilo (classe, ícone, cor) baseada no público.
+ * Retorna a configuração de estilo baseada no público (Versão Blindada).
  */
 function getAudienceConfig(publico) {
-    // Normaliza a string para evitar erros de digitação/espaços
-    const chave = publico ? publico.trim() : 'Todos';
+    if (!publico) return { css: 'aud-todos', icon: 'fas fa-globe-americas' };
+
+    // Normaliza: remove acentos e deixa minúsculo
+    const normalize = (str) => str.toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+
+    const chave = normalize(publico);
 
     const mapa = {
-        'Adulto':            { css: 'aud-adulto',       icon: 'fas fa-wine-glass-alt' },
-        'Cultural':          { css: 'aud-cultural',     icon: 'fas fa-theater-masks' },
-        'Família':           { css: 'aud-familia',      icon: 'fas fa-users' },
-        'Infantil':          { css: 'aud-infantil',     icon: 'fas fa-child' },
-        'Jovem':             { css: 'aud-jovem',        icon: 'fas fa-bolt' },
-        'LGBTQIA+':          { css: 'aud-lgbt',         icon: 'fas fa-rainbow' },
-        'Mulheres':          { css: 'aud-mulheres',     icon: 'fas fa-venus' },
-        'Social':            { css: 'aud-social',       icon: 'fas fa-hands-helping' },
-        'Terceira Idade':    { css: 'aud-terceira',     icon: 'fas fa-blind' },
-        'Todos os Públicos': { css: 'aud-todos',        icon: 'fas fa-globe-americas' },
-        'Torcedores':        { css: 'aud-torcedores',   icon: 'fas fa-futbol' },
-        'Universitário':     { css: 'aud-universitario', icon: 'fas fa-graduation-cap' }
+        'adulto':            { css: 'aud-adulto',       icon: 'fas fa-wine-glass-alt' },
+        'cultural':          { css: 'aud-cultural',     icon: 'fas fa-theater-masks' },
+        'familia':           { css: 'aud-familia',      icon: 'fas fa-users' },
+        'infantil':          { css: 'aud-infantil',     icon: 'fas fa-child' },
+        'crianca':           { css: 'aud-infantil',     icon: 'fas fa-child' },
+        'jovem':             { css: 'aud-jovem',        icon: 'fas fa-bolt' },
+        'universitario':     { css: 'aud-universitario', icon: 'fas fa-graduation-cap' },
+        'lgbt':              { css: 'aud-lgbt',         icon: 'fas fa-rainbow' },
+        'gay':               { css: 'aud-lgbt',         icon: 'fas fa-rainbow' },
+        'mulheres':          { css: 'aud-mulheres',     icon: 'fas fa-venus' },
+        'feminino':          { css: 'aud-mulheres',     icon: 'fas fa-venus' },
+        'social':            { css: 'aud-social',       icon: 'fas fa-hands-helping' },
+        'terceira idade':    { css: 'aud-terceira',     icon: 'fas fa-blind' },
+        'idoso':             { css: 'aud-terceira',     icon: 'fas fa-blind' },
+        'torcedores':        { css: 'aud-torcedores',   icon: 'fas fa-futbol' },
+        'todos':             { css: 'aud-todos',        icon: 'fas fa-globe-americas' },
+        'geral':             { css: 'aud-todos',        icon: 'fas fa-globe-americas' }
     };
 
-    // Retorna a config específica ou o padrão 'Todos' se não encontrar
-    return mapa[chave] || mapa['Todos os Públicos'];
+    if (mapa[chave]) return mapa[chave];
+    
+    for (const [key, val] of Object.entries(mapa)) {
+        if (chave.includes(key)) return val;
+    }
+
+    return mapa['todos'];
 }
 
 /**
- * Renderiza a lista de blocos padrão (Grid de Cards).
+ * Função auxiliar para extrair o público do bloco, 
+ * independente de como está escrito no JSON.
  */
+function getPublicoDoBloco(bloco) {
+    return bloco.audience || 
+           bloco['Público-Alvo Principal'] || 
+           bloco['Público-Alvo'] || 
+           bloco['publico'] || 
+           'Geral';
+}
+
 export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
     const container = document.getElementById(containerId);
     container.innerHTML = '';
@@ -61,10 +86,10 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
     listaBlocos.forEach(bloco => {
         const article = document.createElement('article');
         
-        // 1. Pega a configuração do público
-        const audienceConfig = getAudienceConfig(bloco.audience);
+        // 1. Extrai o público usando a função segura
+        const publicoTexto = getPublicoDoBloco(bloco);
+        const audienceConfig = getAudienceConfig(publicoTexto);
         
-        // 2. Adiciona a classe de cor ao card principal
         article.className = `bloco-card ${audienceConfig.css}`;
         
         article.onclick = (e) => {
@@ -76,14 +101,13 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
         const iconHeart = isFavorito(bloco.id) ? 'fas fa-heart' : 'far fa-heart';
         const statusHTML = getStatusHTML(bloco);
         
-        const estilos = Array.isArray(bloco.musical_style) ? bloco.musical_style : [];
+        const estilos = Array.isArray(bloco.musical_style) ? bloco.musical_style : (bloco['Estilo Musical'] ? [bloco['Estilo Musical']] : []);
         const estilosTags = estilos.map(style => `<span class="tag">${style}</span>`).join(' ');
-        const bairro = bloco.neighborhood || "BH";
+        const bairro = bloco.neighborhood || bloco['bairro'] || "BH";
 
-        // 3. Monta o HTML com a nova etiqueta (audience-tag)
         article.innerHTML = `
             <div class="card-header">
-                <h3>${bloco.name}</h3>
+                <h3>${bloco.name || bloco['Nome do Bloco']}</h3>
                 <button class="fav-btn ${favoritoClass}" data-id="${bloco.id}">
                     <i class="${iconHeart}"></i>
                 </button>
@@ -92,7 +116,7 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
                 
                 <div class="audience-tag">
                     <i class="${audienceConfig.icon}"></i>
-                    <span>${bloco.audience || 'Geral'}</span>
+                    <span>${publicoTexto}</span>
                 </div>
 
                 ${statusHTML}
@@ -111,8 +135,18 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
 
 async function atualizarClimaDosCards(blocos) {
     for (const bloco of blocos) {
-        if (bloco.lat && bloco.lng && bloco.date) {
-            const clima = await getPrevisaoTempo(bloco.lat, bloco.lng, bloco.date);
+        const lat = bloco.lat || bloco['Latitude Local de Concentração'];
+        const lng = bloco.lng || bloco['Longitude Local de Concentração'];
+        const data = bloco.date || bloco['Data']; // Cuidado: formato da data pode variar
+
+        if (lat && lng && data) {
+            // Conversão de data se necessário (DD/MM/YYYY -> YYYY-MM-DD)
+            let dataFormatada = data;
+            if (data.includes('/')) {
+                dataFormatada = data.split('/').reverse().join('-');
+            }
+
+            const clima = await getPrevisaoTempo(lat, lng, dataFormatada);
             if (clima) {
                 const el = document.getElementById(`weather-${bloco.id}`);
                 if (el) {
@@ -127,11 +161,7 @@ async function atualizarClimaDosCards(blocos) {
     }
 }
 
-/**
- * Exibe a tela de detalhes (Versão Melhorada com Identidade Visual).
- */
 export async function mostrarDetalhes(bloco) {
-    // 1. Limpa listener anterior (Vibe Check)
     if (unsubscribeVibe) {
         unsubscribeVibe();
         unsubscribeVibe = null;
@@ -139,39 +169,55 @@ export async function mostrarDetalhes(bloco) {
 
     const container = document.getElementById('detalhes-conteudo');
     
-    // 2. Configurações de Público e Estilo
-    const audConfig = getAudienceConfig(bloco.audience); 
-    const estilosMusicais = Array.isArray(bloco.musical_style) ? bloco.musical_style.join(' • ') : 'Diversos';
+    // 1. Extração Segura de Dados
+    const publicoTexto = getPublicoDoBloco(bloco);
+    const audConfig = getAudienceConfig(publicoTexto);
     
-    // 3. Status e Check-in
+    let estilosMusicais = 'Diversos';
+    if (Array.isArray(bloco.musical_style)) {
+        estilosMusicais = bloco.musical_style.join(' • ');
+    } else if (bloco['Estilo Musical']) {
+        estilosMusicais = bloco['Estilo Musical'];
+    }
+
     const jaFui = isCheckedIn(bloco.id);
     const checkinClass = jaFui ? 'checked' : '';
     const checkinText = jaFui ? 'Fui e sobrevivi!' : 'Marcar presença';
     const checkinIcon = jaFui ? 'fas fa-check-circle' : 'far fa-circle';
 
-    // 4. Links Externos (Maps e Uber)
+    // Normaliza coordenadas
+    const lat = bloco.lat || bloco['Latitude Local de Concentração'];
+    const lng = bloco.lng || bloco['Longitude Local de Concentração'];
+    const local = bloco.location || bloco['Local de Concentração'];
+    const localFim = bloco.locationEnd || bloco['Local de Dispersão'];
+    const nome = bloco.name || bloco['Nome do Bloco'];
+
+    // Links Externos
     let mapsUrl, btnUberHtml = '';
-    if (bloco.lat && bloco.lng) {
-        mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${bloco.lat},${bloco.lng}&travelmode=walking`;
+    if (lat && lng) {
+        mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
         
-        const nickname = encodeURIComponent(bloco.name);
-        // Botão Uber com estilo "Noturno" fixo para contraste
-        const uberUrl = `https://m.uber.com/ul/?action=setPickup&client_id=nu_carnaval&pickup=my_location&dropoff[latitude]=${bloco.lat}&dropoff[longitude]=${bloco.lng}&dropoff[nickname]=${nickname}`;
+        const nickname = encodeURIComponent(nome);
+        const uberUrl = `https://m.uber.com/ul/?action=setPickup&client_id=nu_carnaval&pickup=my_location&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}&dropoff[nickname]=${nickname}`;
         btnUberHtml = `
             <a href="${uberUrl}" class="btn-uber">
                <i class="fab fa-uber"></i> Chamar Uber
             </a>
         `;
     } else {
-        const query = encodeURIComponent((bloco.location || bloco.name) + " Belo Horizonte");
+        const query = encodeURIComponent((local || nome) + " Belo Horizonte");
         mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
     }
 
-    // 5. Previsão do Tempo (Lógica Assíncrona Rápida para o Detalhe)
+    // Previsão do Tempo
     let weatherHtml = '';
-    if (bloco.lat && bloco.lng && bloco.date) {
-        // Tenta pegar do cache ou busca rápido
-        const clima = await getPrevisaoTempo(bloco.lat, bloco.lng, bloco.date);
+    let dataFormatada = bloco.date || bloco['Data'];
+    if (dataFormatada && dataFormatada.includes('/')) {
+        dataFormatada = dataFormatada.split('/').reverse().join('-');
+    }
+
+    if (lat && lng && dataFormatada) {
+        const clima = await getPrevisaoTempo(lat, lng, dataFormatada);
         if (clima) {
             weatherHtml = `
                 <div class="detalhe-clima ${clima.icone.includes('rain') ? 'chuva' : 'sol'}">
@@ -182,39 +228,42 @@ export async function mostrarDetalhes(bloco) {
         }
     }
 
-    // 6. Montagem do HTML
-    // Adicionamos a classe do público (audConfig.css) no container pai para liberar a variável --aud-color
+    const descricao = bloco.description || bloco['descrisao'] || '';
+    const horario = bloco.time || bloco['Horário'];
+    const dataExibicao = (bloco.date || bloco['Data']).split('-').reverse().join('/'); // Garante DD/MM/AAAA se vier ISO
+
+    // HTML
     container.innerHTML = `
         <div class="detalhe-wrapper ${audConfig.css}">
             
             <div class="detalhe-hero">
                 <div class="detalhe-header-top">
                     <span class="audience-pill" style="background-color: var(--aud-color);">
-                        <i class="${audConfig.icon}" style="color: #000;"></i> ${bloco.audience || 'Geral'}
+                        <i class="${audConfig.icon}" style="color: #000;"></i> ${publicoTexto}
                     </span>
                     ${getStatusPill(bloco)}
                 </div>
 
-                <h1 class="detalhe-titulo">${bloco.name}</h1>
+                <h1 class="detalhe-titulo">${nome}</h1>
                 <p class="detalhe-subtitulo">${estilosMusicais}</p>
 
                 ${weatherHtml}
                 
-                ${bloco.description ? `<div class="detalhe-descricao">"${bloco.description}"</div>` : ''}
+                ${descricao ? `<div class="detalhe-descricao">"${descricao}"</div>` : ''}
                 
                 <div class="detalhe-grid-info">
                     <div class="info-item">
                         <i class="far fa-calendar-alt"></i>
                         <div>
                             <span class="label">Data</span>
-                            <span class="valor">${bloco.date.split('-').reverse().join('/')}</span>
+                            <span class="valor">${dataExibicao}</span>
                         </div>
                     </div>
                     <div class="info-item">
                         <i class="far fa-clock"></i>
                         <div>
                             <span class="label">Início</span>
-                            <span class="valor">${bloco.time}</span>
+                            <span class="valor">${horario}</span>
                         </div>
                     </div>
                 </div>
@@ -230,13 +279,13 @@ export async function mostrarDetalhes(bloco) {
                 <div class="localizacao-box">
                     <div class="loc-row">
                         <div class="dot start"></div>
-                        <p><strong>Concentração:</strong> ${bloco.location}</p>
+                        <p><strong>Concentração:</strong> ${local}</p>
                     </div>
-                    ${bloco.locationEnd ? `
+                    ${localFim ? `
                     <div class="loc-connector"></div>
                     <div class="loc-row">
                         <div class="dot end"></div>
-                        <p><strong>Dispersão:</strong> ${bloco.locationEnd}</p>
+                        <p><strong>Dispersão:</strong> ${localFim}</p>
                     </div>` : ''}
                 </div>
 
@@ -281,27 +330,29 @@ export async function mostrarDetalhes(bloco) {
         renderDetalheMap(bloco);
     }, 100);
 
-    // Inicia lógica do Vibe Check separada para organização
     iniciarVibeCheck(bloco);
 }
 
-/**
- * Helper para retornar a Pill de Status "AO VIVO" no detalhe
- */
 function getStatusPill(bloco) {
+    // Normalização de chaves para status
+    const data = bloco.date || bloco['Data'];
+    const hora = bloco.time || bloco['Horário'];
+    
+    if (!data || !hora) return '';
+
+    let dataIso = data;
+    if (data.includes('/')) dataIso = data.split('/').reverse().join('-');
+
     const hoje = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-'); 
     const agora = new Date().getHours();
-    const horaBloco = parseInt(bloco.time.split(':')[0]);
+    const horaBloco = parseInt(hora.split(':')[0]);
     
-    if (bloco.date === hoje && agora >= horaBloco && agora < horaBloco + 5) {
+    if (dataIso === hoje && agora >= horaBloco && agora < horaBloco + 5) {
         return `<span class="status-live-pill">AO VIVO 🔥</span>`;
     }
     return '';
 }
 
-/**
- * Lógica do Vibe Check extraída para limpar a função principal
- */
 function iniciarVibeCheck(bloco) {
     const displayEl = document.getElementById('vibe-display');
     const statusEl = displayEl.querySelector('.vibe-status');
@@ -309,16 +360,16 @@ function iniciarVibeCheck(bloco) {
     const botoes = document.querySelectorAll('.btn-vibe');
 
     unsubscribeVibe = monitorarVibe(bloco.id, (data) => {
+        if (!displayEl) return;
+        
         displayEl.classList.remove('loading');
         statusEl.textContent = data.statusTexto;
         
-        // Cores do Card
         displayEl.className = 'vibe-display'; 
         if (data.score > 3) displayEl.classList.add('vibe-hot');
         else if (data.score < -1) displayEl.classList.add('vibe-dead');
         else displayEl.classList.add('vibe-neutral');
 
-        // Badges
         badgesEl.innerHTML = '';
         if (data.temPolicia) {
             badgesEl.innerHTML += `<span class="badge-policia">👮 Policiamento</span>`;
@@ -344,9 +395,6 @@ function iniciarVibeCheck(bloco) {
     });
 }
 
-/**
- * Gerencia a troca de visualização (Abas) e Visibilidade da Barra de Pesquisa
- */
 export function mudarVisualizacao(viewId) {
     document.querySelectorAll('main > section').forEach(section => {
         section.classList.remove('active-view');
@@ -357,7 +405,6 @@ export function mudarVisualizacao(viewId) {
     const bottomNav = document.querySelector('.bottom-nav');
     const mainContent = document.getElementById('main-content');
 
-    // Lógica de exibição do Header/Nav e Padding
     if (viewId === 'view-detalhes') {
         appHeader.style.display = 'none';
         bottomNav.style.display = 'none';
@@ -368,7 +415,6 @@ export function mudarVisualizacao(viewId) {
         mainContent.style.paddingTop = ''; 
     }
 
-    // Ativa a view alvo
     const target = document.getElementById(viewId);
     if (target) {
         target.classList.remove('view-hidden');
@@ -380,7 +426,6 @@ export function mudarVisualizacao(viewId) {
         renderBotaoNotificacao();
     }
 
-    // --- CONTROLE DE VISIBILIDADE DA BUSCA ---
     const searchContainer = document.querySelector('.search-container');
     const filterChips = document.querySelector('.filter-chips');
     const filterToggle = document.getElementById('filter-toggle');
@@ -439,19 +484,27 @@ export function renderCategorias(categorias, onClick) {
 }
 
 function getStatusHTML(bloco) {
-    if (!bloco.date || !bloco.time) return '';
-    const hoje = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-'); 
+    const data = bloco.date || bloco['Data'];
+    const hora = bloco.time || bloco['Horário'];
+
+    if (!data || !hora) return '';
     
+    let dataIso = data;
+    if (data.includes('/')) dataIso = data.split('/').reverse().join('-');
+
+    const hoje = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-'); 
     const agora = new Date().getHours();
-    const horaBloco = parseInt(bloco.time.split(':')[0]);
-    const isHoje = bloco.date === hoje; 
+    const horaBloco = parseInt(hora.split(':')[0]);
+    
+    const isHoje = dataIso === hoje; 
     const isRolando = isHoje && (agora >= horaBloco && agora < horaBloco + 5);
 
     if (isRolando) {
         return `<div class="status-live" style="background:var(--color-cta); color:black; border:2px solid black; padding:2px 6px; font-weight:800; transform:rotate(-1deg);">TÁ ROLANDO!</div>`;
     } else {
-        const diaMes = bloco.date.split('-').reverse().slice(0, 2).join('/');
-        return `<div class="card-info"><i class="far fa-clock"></i><span style="font-weight:700; color: var(--color-asphalt);">${diaMes} às ${bloco.time}</span></div>`;
+        // Exibe DD/MM
+        const diaMes = data.includes('-') ? data.split('-').reverse().slice(0, 2).join('/') : data.substring(0, 5);
+        return `<div class="card-info"><i class="far fa-clock"></i><span style="font-weight:700; color: var(--color-asphalt);">${diaMes} às ${hora}</span></div>`;
     }
 }
 
@@ -472,8 +525,13 @@ export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
 
     const gruposPorData = {};
     listaBlocos.forEach(bloco => {
-        if (!gruposPorData[bloco.date]) gruposPorData[bloco.date] = [];
-        gruposPorData[bloco.date].push(bloco);
+        const data = bloco.date || bloco['Data'];
+        // Normaliza para YYYY-MM-DD para agrupar corretamente
+        let dataKey = data;
+        if (data.includes('/')) dataKey = data.split('/').reverse().join('-');
+
+        if (!gruposPorData[dataKey]) gruposPorData[dataKey] = [];
+        gruposPorData[dataKey].push(bloco);
     });
 
     const datasOrdenadas = Object.keys(gruposPorData).sort();
@@ -482,7 +540,11 @@ export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
 
     datasOrdenadas.forEach(data => {
         const blocosDoDia = gruposPorData[data];
-        blocosDoDia.sort((a, b) => a.time.localeCompare(b.time));
+        blocosDoDia.sort((a, b) => {
+            const horaA = a.time || a['Horário'];
+            const horaB = b.time || b['Horário'];
+            return horaA.localeCompare(horaB);
+        });
 
         const dayGroup = document.createElement('div');
         dayGroup.className = 'timeline-day-group';
@@ -493,7 +555,8 @@ export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
         let ultimoHorarioFim = -1;
 
         blocosDoDia.forEach((bloco, index) => {
-            const [hora, min] = bloco.time.split(':').map(Number);
+            const horaStr = bloco.time || bloco['Horário'];
+            const [hora, min] = horaStr.split(':').map(Number);
             const inicioMinutos = hora * 60 + min;
             const duracaoEstimada = 240; 
             const fimMinutos = inicioMinutos + duracaoEstimada;
@@ -530,9 +593,13 @@ function criarCardTimeline(bloco) {
         mostrarDetalhes(bloco); 
     };
 
+    const nome = bloco.name || bloco['Nome do Bloco'];
+    const hora = bloco.time || bloco['Horário'];
+    const bairro = bloco.neighborhood || bloco['bairro'] || 'BH';
+
     article.innerHTML = `
         <div class="card-header" style="padding: 12px;">
-            <h3 style="font-size: 1.1rem;">${bloco.name}</h3>
+            <h3 style="font-size: 1.1rem;">${nome}</h3>
             <button class="fav-btn favorited" data-id="${bloco.id}">
                 <i class="fas fa-heart"></i>
             </button>
@@ -540,10 +607,10 @@ function criarCardTimeline(bloco) {
         <div class="card-body" style="padding: 0 12px 12px 12px;">
             <div class="card-info">
                 <i class="far fa-clock"></i>
-                <span style="font-weight:800; color: var(--color-primary);">${bloco.time}</span>
+                <span style="font-weight:800; color: var(--color-primary);">${hora}</span>
                 <span style="margin: 0 8px; color:#ccc;">|</span>
                 <i class="fas fa-map-marker-alt"></i>
-                <span>${bloco.neighborhood || "BH"}</span>
+                <span>${bairro}</span>
             </div>
         </div>
     `;
@@ -579,13 +646,9 @@ export function renderStats(count, containerId = 'stats-container') {
 
 function renderBotaoNotificacao() {
     const container = document.querySelector('.utility-list');
-    
-    // --- PROTEÇÃO DE MODO DEMO ---
     const params = new URLSearchParams(window.location.search);
     if (!params.has('demo')) return;
-    // -----------------------------
 
-    // Evita duplicar se já existir
     if (!container || document.getElementById('btn-ativar-push')) return;
 
     const btn = document.createElement('article');
@@ -643,15 +706,10 @@ function renderBotaoNotificacao() {
     container.insertBefore(btn, container.firstChild);
 }
 
-/**
- * Renderiza o cartaz para o Instagram Stories (HTML oculto)
- * @param {Array} blocos - Lista de blocos favoritos
- */
 export function renderPoster(blocos) {
     const container = document.getElementById('poster-stories');
     if (!container) return;
 
-    // Cabeçalho
     let html = `
         <div class="poster-header">
             <div class="poster-title">MEU ROTEIRO</div>
@@ -660,7 +718,6 @@ export function renderPoster(blocos) {
         <div class="poster-list">
     `;
 
-    // Limite de itens para caber na imagem
     const MAX_ITEMS = 6;
     const blocosParaExibir = blocos.slice(0, MAX_ITEMS);
 
@@ -672,18 +729,24 @@ export function renderPoster(blocos) {
         `;
     } else {
         blocosParaExibir.forEach(bloco => {
-            // Formata data simples (31/01)
-            const diaMes = bloco.date ? bloco.date.split('-').reverse().slice(0,2).join('/') : '';
+            const data = bloco.date || bloco['Data'];
+            const hora = bloco.time || bloco['Horário'];
+            const nome = bloco.name || bloco['Nome do Bloco'];
+            const bairro = bloco.neighborhood || bloco['bairro'] || 'BH';
+
+            let diaMes = '';
+            if (data) {
+                diaMes = data.includes('-') ? data.split('-').reverse().slice(0, 2).join('/') : data.substring(0, 5);
+            }
             
-            // FIX: Card Fundo PRETO e Texto/Bordas BRANCAS para contraste na imagem gerada
             html += `
                 <div class="poster-item" style="background-color: #1A1A1A !important; color: #FFFFFF !important; border: 6px solid #FFFFFF !important;">
-                    <div class="poster-time" style="background-color: #CCFF00 !important; color: #1A1A1A !important; border: 4px solid #FFFFFF !important;">${bloco.time}</div>
+                    <div class="poster-time" style="background-color: #CCFF00 !important; color: #1A1A1A !important; border: 4px solid #FFFFFF !important;">${hora}</div>
                     <div class="poster-info" style="color: #FFFFFF !important;">
-                        <h3 style="color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; margin-bottom: 8px;">${bloco.name}</h3>
+                        <h3 style="color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; margin-bottom: 8px;">${nome}</h3>
                         <p style="color: #DDDDDD !important; font-weight: 700;">
                             <i class="fas fa-calendar-alt" style="color: #FF2A00 !important;"></i> ${diaMes} • 
-                            <i class="fas fa-map-marker-alt" style="color: #FF2A00 !important;"></i> ${bloco.neighborhood || 'BH'}
+                            <i class="fas fa-map-marker-alt" style="color: #FF2A00 !important;"></i> ${bairro}
                         </p>
                     </div>
                 </div>
@@ -691,7 +754,6 @@ export function renderPoster(blocos) {
         });
     }
 
-    // Se tiver mais blocos que o limite
     if (blocos.length > MAX_ITEMS) {
         html += `
             <div class="poster-item" style="background:#FF2A00 !important; color:white !important; justify-content:center;">
