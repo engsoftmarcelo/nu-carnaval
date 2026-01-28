@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - ATUALIZADO (Com Personalização por Público)
+   Camada de Interface - ATUALIZADO (Com Personalização por Público e Detalhes Turbinados)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn } from './storage.js';
@@ -128,129 +128,152 @@ async function atualizarClimaDosCards(blocos) {
 }
 
 /**
- * Exibe a tela de detalhes.
+ * Exibe a tela de detalhes (Versão Melhorada com Identidade Visual).
  */
-export function mostrarDetalhes(bloco) {
-    // 1. Limpa listener anterior se existir (para não misturar blocos)
+export async function mostrarDetalhes(bloco) {
+    // 1. Limpa listener anterior (Vibe Check)
     if (unsubscribeVibe) {
         unsubscribeVibe();
         unsubscribeVibe = null;
     }
 
     const container = document.getElementById('detalhes-conteudo');
-    const estilos = Array.isArray(bloco.musical_style) ? bloco.musical_style.join(', ') : 'Diversos';
     
-    // Check-in logic
+    // 2. Configurações de Público e Estilo
+    const audConfig = getAudienceConfig(bloco.audience); 
+    const estilosMusicais = Array.isArray(bloco.musical_style) ? bloco.musical_style.join(' • ') : 'Diversos';
+    
+    // 3. Status e Check-in
     const jaFui = isCheckedIn(bloco.id);
     const checkinClass = jaFui ? 'checked' : '';
-    const checkinText = jaFui ? 'Fui e sobrevivi!' : 'Marcar presença ("Eu fui!")';
+    const checkinText = jaFui ? 'Fui e sobrevivi!' : 'Marcar presença';
     const checkinIcon = jaFui ? 'fas fa-check-circle' : 'far fa-circle';
 
-    // Link do Google Maps (Existente)
-    let mapsUrl;
+    // 4. Links Externos (Maps e Uber)
+    let mapsUrl, btnUberHtml = '';
     if (bloco.lat && bloco.lng) {
         mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${bloco.lat},${bloco.lng}&travelmode=walking`;
+        
+        const nickname = encodeURIComponent(bloco.name);
+        // Botão Uber com estilo "Noturno" fixo para contraste
+        const uberUrl = `https://m.uber.com/ul/?action=setPickup&client_id=nu_carnaval&pickup=my_location&dropoff[latitude]=${bloco.lat}&dropoff[longitude]=${bloco.lng}&dropoff[nickname]=${nickname}`;
+        btnUberHtml = `
+            <a href="${uberUrl}" class="btn-uber">
+               <i class="fab fa-uber"></i> Chamar Uber
+            </a>
+        `;
     } else {
         const query = encodeURIComponent((bloco.location || bloco.name) + " Belo Horizonte");
         mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
     }
 
-    // Link do Uber ("Me Leva")
-    // FIX APLICADO: Adicionado !important na cor branca para forçar visibilidade sobre o fundo preto
-    let btnUberHtml = '';
-    if (bloco.lat && bloco.lng) {
-        const nickname = encodeURIComponent(bloco.name);
-        const uberUrl = `https://m.uber.com/ul/?action=setPickup&client_id=nu_carnaval&pickup=my_location&dropoff[latitude]=${bloco.lat}&dropoff[longitude]=${bloco.lng}&dropoff[nickname]=${nickname}`;
-        
-        btnUberHtml = `
-            <a href="${uberUrl}" class="detalhe-mapa-btn" style="background-color: #000000; color: #FFFFFF !important; border-color: #000000; margin-top: 12px;">
-               <i class="fab fa-uber"></i> Chamar Uber
-            </a>
-        `;
+    // 5. Previsão do Tempo (Lógica Assíncrona Rápida para o Detalhe)
+    let weatherHtml = '';
+    if (bloco.lat && bloco.lng && bloco.date) {
+        // Tenta pegar do cache ou busca rápido
+        const clima = await getPrevisaoTempo(bloco.lat, bloco.lng, bloco.date);
+        if (clima) {
+            weatherHtml = `
+                <div class="detalhe-clima ${clima.icone.includes('rain') ? 'chuva' : 'sol'}">
+                    <i class="fas ${clima.icone}"></i>
+                    <span>Previsão: <strong>${clima.tempMax}°C</strong> (${clima.resumo || 'Sem chuva'})</span>
+                </div>
+            `;
+        }
     }
 
-    // HTML Base (Hero + Mapa + Vibe Check)
+    // 6. Montagem do HTML
+    // Adicionamos a classe do público (audConfig.css) no container pai para liberar a variável --aud-color
     container.innerHTML = `
-        <div class="detalhe-hero">
-            <h1 class="detalhe-titulo">${bloco.name}</h1>
-            <p style="font-size: 1.1rem; color: #666; margin-bottom: 8px;">${estilos}</p>
+        <div class="detalhe-wrapper ${audConfig.css}">
             
-            ${bloco.description ? `<p style="font-size: 0.95rem; line-height: 1.4; color: #333; margin-bottom: 16px; font-style: italic;">"${bloco.description}"</p>` : ''}
-            
-            <div class="detalhe-meta">
-                <div class="meta-box">
-                    <span class="meta-label">Data</span>
-                    <div class="meta-valor">${bloco.date.split('-').reverse().join('/')}</div>
+            <div class="detalhe-hero">
+                <div class="detalhe-header-top">
+                    <span class="audience-pill" style="background-color: var(--aud-color);">
+                        <i class="${audConfig.icon}" style="color: #000;"></i> ${bloco.audience || 'Geral'}
+                    </span>
+                    ${getStatusPill(bloco)}
                 </div>
-                <div class="meta-box">
-                    <span class="meta-label">Horário</span>
-                    <div class="meta-valor">${bloco.time}</div>
-                </div>
-            </div>
 
-            <button id="btn-checkin-action" class="btn-checkin ${checkinClass}" data-id="${bloco.id}">
-                <i class="${checkinIcon}"></i> <span>${checkinText}</span>
-            </button>
-        </div>
+                <h1 class="detalhe-titulo">${bloco.name}</h1>
+                <p class="detalhe-subtitulo">${estilosMusicais}</p>
 
-        <div class="utility-card">
-            <h3><i class="fas fa-map-signs"></i> Trajeto</h3>
-            
-            <div id="detalhe-mapa-interno" style="height: 250px; width: 100%; border-radius: 8px; border: 2px solid #1A1A1A; margin-top: 10px; z-index: 1; background-color: #e0e0e0;"></div>
-            
-            <div style="display:flex; justify-content:space-between; margin-top:12px; font-size:0.85rem; font-weight:700; color:#1A1A1A;">
-                 <span style="display:flex; align-items:center; gap:6px;">
-                    <div style="width:12px; height:12px; background:#00C853; border-radius:50%; border:2px solid #1A1A1A;"></div> 
-                    Concentração
-                 </span>
-                 <span style="display:flex; align-items:center; gap:6px;">
-                    <div style="width:12px; height:12px; background:#FF2A00; border-radius:50%; border:2px solid #1A1A1A;"></div> 
-                    Dispersão
-                 </span>
-            </div>
-            
-            <div style="margin-top: 16px; border-top: 1px dashed #ccc; padding-top: 12px;">
-                <p style="font-size: 0.9rem; margin-bottom:4px;"><strong>Início:</strong> ${bloco.location}</p>
-                ${bloco.locationEnd ? `<p style="font-size: 0.9rem;"><strong>Fim:</strong> ${bloco.locationEnd}</p>` : ''}
-            </div>
-
-            <a href="${mapsUrl}" target="_blank" class="detalhe-mapa-btn">
-               <i class="fas fa-location-arrow"></i> Como chegar (GPS)
-            </a>
-            
-            ${btnUberHtml}
-        </div>
-
-        <div class="vibe-section utility-card">
-            <h3 style="color: var(--color-primary);"><i class="fas fa-satellite-dish"></i> Vibe Check (Ao Vivo)</h3>
-            <p style="font-size: 0.9rem; margin-bottom: 12px;">O que tá rolando agora? (Últimos 30min)</p>
-            
-            <div id="vibe-display" class="vibe-display loading">
-                <span class="vibe-status">Carregando...</span>
-                <div class="vibe-badges"></div>
-            </div>
-
-            <div id="vibe-controls" class="vibe-controls">
-                ${ getAuth().currentUser ? `
-                    <button class="btn-vibe btn-fogo" data-tipo="fogo">
-                        🔥<br>Fervendo
-                    </button>
-                    <button class="btn-vibe btn-morto" data-tipo="morto">
-                        💀<br>Morgado
-                    </button>
-                    <button class="btn-vibe btn-policia" data-tipo="policia">
-                        👮<br>Polícia
-                    </button>
-                ` : `
-                    <div class="login-lock">
-                        <i class="fas fa-lock"></i>
-                        <span>Faça login para enviar updates!</span>
+                ${weatherHtml}
+                
+                ${bloco.description ? `<div class="detalhe-descricao">"${bloco.description}"</div>` : ''}
+                
+                <div class="detalhe-grid-info">
+                    <div class="info-item">
+                        <i class="far fa-calendar-alt"></i>
+                        <div>
+                            <span class="label">Data</span>
+                            <span class="valor">${bloco.date.split('-').reverse().join('/')}</span>
+                        </div>
                     </div>
-                `}
+                    <div class="info-item">
+                        <i class="far fa-clock"></i>
+                        <div>
+                            <span class="label">Início</span>
+                            <span class="valor">${bloco.time}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn-checkin-action" class="btn-checkin ${checkinClass}" data-id="${bloco.id}">
+                    <i class="${checkinIcon}"></i> <span>${checkinText}</span>
+                </button>
             </div>
-        </div>
-        
-        <div style="height: 100px;"></div>`;
+
+            <div class="utility-card">
+                <h3><i class="fas fa-map-marked-alt"></i> Onde é o trem?</h3>
+                
+                <div class="localizacao-box">
+                    <div class="loc-row">
+                        <div class="dot start"></div>
+                        <p><strong>Concentração:</strong> ${bloco.location}</p>
+                    </div>
+                    ${bloco.locationEnd ? `
+                    <div class="loc-connector"></div>
+                    <div class="loc-row">
+                        <div class="dot end"></div>
+                        <p><strong>Dispersão:</strong> ${bloco.locationEnd}</p>
+                    </div>` : ''}
+                </div>
+
+                <div id="detalhe-mapa-interno" class="mapa-preview"></div>
+
+                <div class="botoes-mapa-grid">
+                    <a href="${mapsUrl}" target="_blank" class="detalhe-mapa-btn">
+                        <i class="fas fa-location-arrow"></i> Abrir GPS
+                    </a>
+                    ${btnUberHtml}
+                </div>
+            </div>
+
+            <div class="vibe-section utility-card">
+                <h3 style="color: var(--color-primary);"><i class="fas fa-satellite-dish"></i> Vibe Check (Ao Vivo)</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 12px; color: #666;">O que tá rolando agora?</p>
+                
+                <div id="vibe-display" class="vibe-display loading">
+                    <span class="vibe-status">Carregando...</span>
+                    <div class="vibe-badges"></div>
+                </div>
+
+                <div id="vibe-controls" class="vibe-controls">
+                    ${ getAuth().currentUser ? `
+                        <button class="btn-vibe btn-fogo" data-tipo="fogo">🔥<br>Fervendo</button>
+                        <button class="btn-vibe btn-morto" data-tipo="morto">💀<br>Morgado</button>
+                        <button class="btn-vibe btn-policia" data-tipo="policia">👮<br>Polícia</button>
+                    ` : `
+                        <div class="login-lock">
+                            <i class="fas fa-lock"></i> <span>Faça login para avisar a galera!</span>
+                        </div>
+                    `}
+                </div>
+            </div>
+            
+            <div style="height: 100px;"></div>
+        </div>`;
 
     mudarVisualizacao('view-detalhes');
 
@@ -258,15 +281,35 @@ export function mostrarDetalhes(bloco) {
         renderDetalheMap(bloco);
     }, 100);
 
-    // --- LÓGICA DO VIBE CHECK ---
+    // Inicia lógica do Vibe Check separada para organização
+    iniciarVibeCheck(bloco);
+}
+
+/**
+ * Helper para retornar a Pill de Status "AO VIVO" no detalhe
+ */
+function getStatusPill(bloco) {
+    const hoje = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-'); 
+    const agora = new Date().getHours();
+    const horaBloco = parseInt(bloco.time.split(':')[0]);
+    
+    if (bloco.date === hoje && agora >= horaBloco && agora < horaBloco + 5) {
+        return `<span class="status-live-pill">AO VIVO 🔥</span>`;
+    }
+    return '';
+}
+
+/**
+ * Lógica do Vibe Check extraída para limpar a função principal
+ */
+function iniciarVibeCheck(bloco) {
     const displayEl = document.getElementById('vibe-display');
     const statusEl = displayEl.querySelector('.vibe-status');
     const badgesEl = displayEl.querySelector('.vibe-badges');
+    const botoes = document.querySelectorAll('.btn-vibe');
 
-    // Inicia Monitoramento
     unsubscribeVibe = monitorarVibe(bloco.id, (data) => {
         displayEl.classList.remove('loading');
-        
         statusEl.textContent = data.statusTexto;
         
         // Cores do Card
@@ -285,18 +328,16 @@ export function mostrarDetalhes(bloco) {
         }
     });
 
-    // Listeners dos Botões
-    const botoes = document.querySelectorAll('.btn-vibe');
     botoes.forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const tipo = btn.dataset.tipo;
-            btn.classList.add('sending'); // Feedback visual (CSS)
+            btn.classList.add('sending');
             
             const sucesso = await enviarVibe(bloco.id, tipo);
             
             if (sucesso) {
                 botoes.forEach(b => b.disabled = true);
-                setTimeout(() => botoes.forEach(b => b.disabled = false), 5000); // Anti-spam 5s
+                setTimeout(() => botoes.forEach(b => b.disabled = false), 5000);
             }
             btn.classList.remove('sending');
         });
@@ -324,8 +365,6 @@ export function mudarVisualizacao(viewId) {
     } else {
         appHeader.style.display = 'flex';
         bottomNav.style.display = 'flex';
-        // Remove o padding inline para que o CSS (200px) assuma o controle
-        // Isso evita que o header cubra o conteúdo
         mainContent.style.paddingTop = ''; 
     }
 
@@ -342,7 +381,6 @@ export function mudarVisualizacao(viewId) {
     }
 
     // --- CONTROLE DE VISIBILIDADE DA BUSCA ---
-    // Oculta busca e filtros na aba Ajuda/Guia, mostra nas outras
     const searchContainer = document.querySelector('.search-container');
     const filterChips = document.querySelector('.filter-chips');
     const filterToggle = document.getElementById('filter-toggle');
@@ -353,7 +391,6 @@ export function mudarVisualizacao(viewId) {
             if (filterChips) filterChips.style.display = 'none';
             if (filterToggle) filterToggle.style.display = 'none';
         } else {
-            // Garante visibilidade em Mapa, Meus Trens, Explorar
             searchContainer.style.display = 'block';
             if (filterChips) filterChips.style.display = 'flex';
             if (filterToggle) filterToggle.style.display = 'block';
@@ -540,10 +577,6 @@ export function renderStats(count, containerId = 'stats-container') {
     `;
 }
 
-/* ==========================================================================
-   UI DE SIMULAÇÃO DE CRISE (Link Secreto)
-   Só mostra o botão se a URL terminar com ?demo=true
-   ========================================================================== */
 function renderBotaoNotificacao() {
     const container = document.querySelector('.utility-list');
     
@@ -610,11 +643,6 @@ function renderBotaoNotificacao() {
     container.insertBefore(btn, container.firstChild);
 }
 
-/* ==========================================================================
-   GERADOR DE STORIES (MANDA PRO INSTA)
-   Gera o HTML para ser capturado pelo html2canvas
-   ========================================================================== */
-
 /**
  * Renderiza o cartaz para o Instagram Stories (HTML oculto)
  * @param {Array} blocos - Lista de blocos favoritos
@@ -647,7 +675,7 @@ export function renderPoster(blocos) {
             // Formata data simples (31/01)
             const diaMes = bloco.date ? bloco.date.split('-').reverse().slice(0,2).join('/') : '';
             
-            // FIX APLICADO: Card Fundo PRETO e Texto/Bordas BRANCAS para contraste na imagem gerada
+            // FIX: Card Fundo PRETO e Texto/Bordas BRANCAS para contraste na imagem gerada
             html += `
                 <div class="poster-item" style="background-color: #1A1A1A !important; color: #FFFFFF !important; border: 6px solid #FFFFFF !important;">
                     <div class="poster-time" style="background-color: #CCFF00 !important; color: #1A1A1A !important; border: 4px solid #FFFFFF !important;">${bloco.time}</div>

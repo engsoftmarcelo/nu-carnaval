@@ -1378,3 +1378,179 @@ h1, h2, h3 {
 .audience-tag i {
     font-size: 0.9rem;
 }
+
+/* ==========================================================================
+   CSS DO DETALHE PERSONALIZADO
+   Adicione ao final de css/styles.css
+   ========================================================================== */
+
+/* Wrapper que recebe a classe do público (ex: .aud-familia) */
+.detalhe-wrapper {
+    /* Garante que a variável exista, fallback para amarelo */
+    --aud-color: var(--color-cta); 
+}
+
+/* Hero Section Turbinada */
+.detalhe-hero {
+    background-color: var(--color-surface);
+    border: 2px solid var(--color-asphalt);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+    
+    /* A Mágica: Sombra colorida baseada no público */
+    box-shadow: 8px 8px 0px var(--aud-color);
+    transition: box-shadow 0.3s ease;
+}
+
+/* No Dark Mode, reduzimos um pouco o brilho da sombra se necessário */
+@media (prefers-color-scheme: dark) {
+    .detalhe-hero {
+        border-color: #FFF;
+    }
+}
+
+.detalhe-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+/* Etiqueta de Público */
+.audience-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #000 !important; /* Texto sempre preto para contraste */
+    border: 2px solid var(--color-asphalt);
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+}
+
+.status-live-pill {
+    background-color: #FF0000;
+    color: #FFF;
+    font-weight: 800;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    animation: pulse 1s infinite;
+}
+
+.detalhe-subtitulo {
+    font-size: 1.1rem;
+    color: var(--color-text-light);
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.detalhe-descricao {
+    font-style: italic;
+    background: var(--color-bg);
+    padding: 12px;
+    border-left: 4px solid var(--aud-color); /* Borda lateral com cor do público */
+    margin: 16px 0;
+    font-size: 0.95rem;
+    color: var(--color-text);
+}
+
+/* Grid de Informações (Data/Hora) */
+.detalhe-grid-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--color-bg);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.info-item i {
+    font-size: 1.5rem;
+    color: var(--aud-color); /* Ícone com a cor do público */
+}
+
+.info-item .label {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #666;
+    font-weight: 800;
+}
+.info-item .valor {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--color-asphalt);
+}
+
+/* Clima no Detalhe */
+.detalhe-clima {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.detalhe-clima.sol { background-color: #FFF8E1; color: #FF8F00; }
+.detalhe-clima.chuva { background-color: #E3F2FD; color: #1565C0; }
+
+/* Mapa e Uber */
+.localizacao-box {
+    margin: 16px 0;
+}
+.loc-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+}
+.dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #000; }
+.dot.start { background: #00C853; }
+.dot.end { background: #FF2A00; }
+.loc-connector { width: 2px; height: 15px; background: #ccc; margin-left: 5px; }
+
+.mapa-preview {
+    height: 200px;
+    width: 100%;
+    border: 2px solid var(--color-asphalt);
+    border-radius: 8px;
+    background: #EEE;
+}
+
+.botoes-mapa-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.btn-uber {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: #000;
+    color: #FFF !important;
+    font-weight: 700;
+    padding: 12px;
+    border-radius: 4px; /* Estilo Uber */
+    text-decoration: none;
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+}
