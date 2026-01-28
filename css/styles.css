@@ -1326,3 +1326,55 @@ h1, h2, h3 {
     color: #CCFF00 !important;
     padding: 5px 15px;
 }
+
+/* ==========================================================================
+   PERSONALIZAÇÃO POR PÚBLICO-ALVO (Audience Styles)
+   ========================================================================== */
+
+/* Cores por Categoria - Cores Vibrantes/Neon para bater com o tema */
+.aud-familia       { --aud-color: #00E676; } /* Verde Vivo */
+.aud-infantil      { --aud-color: #00B0FF; } /* Azul Celeste */
+.aud-universitario { --aud-color: #FF1744; } /* Vermelho Intenso */
+.aud-lgbt          { --aud-color: #D500F9; } /* Roxo Neon */
+.aud-mulheres      { --aud-color: #F50057; } /* Rosa Pink */
+.aud-cultural      { --aud-color: #FF6D00; } /* Laranja */
+.aud-terceira      { --aud-color: #009688; } /* Verde Azulado */
+.aud-jovem         { --aud-color: #C6FF00; } /* Lima Neon */
+.aud-torcedores    { --aud-color: #2979FF; } /* Azul Royal */
+.aud-social        { --aud-color: #3D5AFE; } /* Indigo */
+.aud-adulto        { --aud-color: #795548; } /* Marrom/Cobre */
+.aud-todos         { --aud-color: #FFD600; } /* Amarelo (Padrão) */
+
+/* Aplica a cor na sombra do Card (Efeito Neo-Brutalist Colorido) */
+.bloco-card[class*="aud-"] {
+    /* Mantém a borda preta, mas a sombra muda de cor */
+    box-shadow: 6px 6px 0px var(--aud-color) !important;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.bloco-card[class*="aud-"]:active {
+    transform: translate(3px, 3px);
+    box-shadow: 2px 2px 0px var(--aud-color) !important;
+}
+
+/* Etiqueta de Público dentro do Card */
+.audience-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: var(--aud-color);
+    color: #000; /* Texto sempre preto para contraste brutalista */
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border: 2px solid #000;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+}
+
+.audience-tag i {
+    font-size: 0.9rem;
+}

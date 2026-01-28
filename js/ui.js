@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - ATUALIZADO (Exibe Descrição)
+   Camada de Interface - ATUALIZADO (Com Personalização por Público)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn } from './storage.js';
@@ -11,6 +11,32 @@ import { enviarVibe, monitorarVibe } from './firebase.js';
 
 // Variável para controlar o listener do Vibe Check (evita duplicação)
 let unsubscribeVibe = null;
+
+/**
+ * Retorna a configuração de estilo (classe, ícone, cor) baseada no público.
+ */
+function getAudienceConfig(publico) {
+    // Normaliza a string para evitar erros de digitação/espaços
+    const chave = publico ? publico.trim() : 'Todos';
+
+    const mapa = {
+        'Adulto':            { css: 'aud-adulto',       icon: 'fas fa-wine-glass-alt' },
+        'Cultural':          { css: 'aud-cultural',     icon: 'fas fa-theater-masks' },
+        'Família':           { css: 'aud-familia',      icon: 'fas fa-users' },
+        'Infantil':          { css: 'aud-infantil',     icon: 'fas fa-child' },
+        'Jovem':             { css: 'aud-jovem',        icon: 'fas fa-bolt' },
+        'LGBTQIA+':          { css: 'aud-lgbt',         icon: 'fas fa-rainbow' },
+        'Mulheres':          { css: 'aud-mulheres',     icon: 'fas fa-venus' },
+        'Social':            { css: 'aud-social',       icon: 'fas fa-hands-helping' },
+        'Terceira Idade':    { css: 'aud-terceira',     icon: 'fas fa-blind' },
+        'Todos os Públicos': { css: 'aud-todos',        icon: 'fas fa-globe-americas' },
+        'Torcedores':        { css: 'aud-torcedores',   icon: 'fas fa-futbol' },
+        'Universitário':     { css: 'aud-universitario', icon: 'fas fa-graduation-cap' }
+    };
+
+    // Retorna a config específica ou o padrão 'Todos' se não encontrar
+    return mapa[chave] || mapa['Todos os Públicos'];
+}
 
 /**
  * Renderiza a lista de blocos padrão (Grid de Cards).
@@ -34,7 +60,12 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
 
     listaBlocos.forEach(bloco => {
         const article = document.createElement('article');
-        article.className = 'bloco-card';
+        
+        // 1. Pega a configuração do público
+        const audienceConfig = getAudienceConfig(bloco.audience);
+        
+        // 2. Adiciona a classe de cor ao card principal
+        article.className = `bloco-card ${audienceConfig.css}`;
         
         article.onclick = (e) => {
             if (e.target.closest('.fav-btn')) return;
@@ -49,6 +80,7 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
         const estilosTags = estilos.map(style => `<span class="tag">${style}</span>`).join(' ');
         const bairro = bloco.neighborhood || "BH";
 
+        // 3. Monta o HTML com a nova etiqueta (audience-tag)
         article.innerHTML = `
             <div class="card-header">
                 <h3>${bloco.name}</h3>
@@ -57,6 +89,12 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
                 </button>
             </div>
             <div class="card-body">
+                
+                <div class="audience-tag">
+                    <i class="${audienceConfig.icon}"></i>
+                    <span>${bloco.audience || 'Geral'}</span>
+                </div>
+
                 ${statusHTML}
                 <div class="card-info weather-placeholder" id="weather-${bloco.id}"></div>
                 <div class="card-info"><i class="fas fa-map-marker-alt"></i><span>${bairro}</span></div>
@@ -132,7 +170,6 @@ export function mostrarDetalhes(bloco) {
     }
 
     // HTML Base (Hero + Mapa + Vibe Check)
-    // ATUALIZAÇÃO: Adicionado bloco.description
     container.innerHTML = `
         <div class="detalhe-hero">
             <h1 class="detalhe-titulo">${bloco.name}</h1>
