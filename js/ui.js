@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - VERSÃO FINAL (Com Vibe Check, Uber e Stories)
+   Camada de Interface - ATUALIZADO (Exibe Descrição)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn } from './storage.js';
@@ -132,10 +132,13 @@ export function mostrarDetalhes(bloco) {
     }
 
     // HTML Base (Hero + Mapa + Vibe Check)
+    // ATUALIZAÇÃO: Adicionado bloco.description
     container.innerHTML = `
         <div class="detalhe-hero">
             <h1 class="detalhe-titulo">${bloco.name}</h1>
-            <p style="font-size: 1.1rem; color: #666;">${estilos}</p>
+            <p style="font-size: 1.1rem; color: #666; margin-bottom: 8px;">${estilos}</p>
+            
+            ${bloco.description ? `<p style="font-size: 0.95rem; line-height: 1.4; color: #333; margin-bottom: 16px; font-style: italic;">"${bloco.description}"</p>` : ''}
             
             <div class="detalhe-meta">
                 <div class="meta-box">
