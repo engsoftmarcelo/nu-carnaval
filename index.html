@@ -56,6 +56,37 @@
 
     <main id="main-content">
         
+        <div id="filters-panel" class="filters-panel" style="display: none;">
+            
+            <div class="filter-group">
+                <span class="filter-label"><i class="far fa-calendar-alt"></i> Dia</span>
+                <div id="filter-dias" class="filter-row"></div>
+            </div>
+
+            <div class="filter-group">
+                <span class="filter-label"><i class="fas fa-users"></i> Público</span>
+                <div id="filter-publico" class="filter-row"></div>
+            </div>
+
+            <div class="filter-group">
+                <span class="filter-label"><i class="far fa-clock"></i> Turno</span>
+                <div id="filter-turnos" class="filter-row">
+                    <button class="chip filter-chip" data-type="turno" data-value="manha">Manhã</button>
+                    <button class="chip filter-chip" data-type="turno" data-value="tarde">Tarde</button>
+                    <button class="chip filter-chip" data-type="turno" data-value="noite">Noite</button>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <span class="filter-label"><i class="fas fa-music"></i> Estilo</span>
+                <div id="filter-estilos" class="filter-row"></div>
+            </div>
+            
+            <button id="btn-clean-filters" class="btn-small" style="width: 100%; margin-top: 10px;">
+                Limpar Filtros
+            </button>
+        </div>
+
         <section id="view-explorar" class="active-view">
             
             <div class="aviso-programacao">
@@ -64,32 +95,6 @@
                     <strong>Atenção:</strong> Por enquanto, apenas blocos de <strong>Pré-Carnaval</strong>! 
                     A programação oficial dos dias de folia será adicionada assim que a Prefeitura divulgar.
                 </p>
-            </div>
-
-            <div id="filters-panel" class="filters-panel" style="display: none;">
-                
-                <div class="filter-group">
-                    <span class="filter-label"><i class="far fa-calendar-alt"></i> Dia</span>
-                    <div id="filter-dias" class="filter-row"></div>
-                </div>
-
-                <div class="filter-group">
-                    <span class="filter-label"><i class="far fa-clock"></i> Turno</span>
-                    <div id="filter-turnos" class="filter-row">
-                        <button class="chip filter-chip" data-type="turno" data-value="manha">Manhã</button>
-                        <button class="chip filter-chip" data-type="turno" data-value="tarde">Tarde</button>
-                        <button class="chip filter-chip" data-type="turno" data-value="noite">Noite</button>
-                    </div>
-                </div>
-
-                <div class="filter-group">
-                    <span class="filter-label"><i class="fas fa-music"></i> Estilo</span>
-                    <div id="filter-estilos" class="filter-row"></div>
-                </div>
-                
-                <button id="btn-clean-filters" class="btn-small" style="width: 100%; margin-top: 10px;">
-                    Limpar Filtros
-                </button>
             </div>
 
             <div id="lista-blocos" class="cards-container">

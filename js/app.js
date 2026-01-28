@@ -1,7 +1,7 @@
 /* ==========================================================================
    js/app.js
-   Ponto de entrada da aplicação - VERSÃO FINAL COM PWA, FILTROS, FIREBASE & STORIES
-   Inclui: Filtros, Mapa, Detalhes, Timeline, Notificações, Sincronização e Gerador de Stories.
+   Ponto de entrada da aplicação - VERSÃO FINAL COM FILTROS GLOBAIS
+   Inclui: Filtros (Dia, Público, Turno, Estilo), Mapa, Detalhes, Timeline.
    ========================================================================== */
 
 import { carregarDados } from './data.js';
@@ -48,6 +48,7 @@ const appState = {
         estilo: null,
         dia: null,    // Formato: 'YYYY-MM-DD'
         turno: null,  // Valores: 'manha', 'tarde', 'noite'
+        publico: null, // NOVO: Filtro de Público
         apenasFavoritos: false
     }
 };
@@ -217,6 +218,7 @@ function setupEventListeners() {
                 }
             }
             
+            // Re-aplica filtros para atualizar a lista se estiver na aba de favoritos
             if (appState.filtros.apenasFavoritos) {
                 aplicarFiltros();
             }
@@ -480,7 +482,26 @@ function inicializarFiltrosUI() {
         });
     }
 
-    // 2. Renderizar Estilos (Dinâmico)
+    // 2. NOVO: Renderizar Públicos (Dinâmico)
+    const publicosUnicos = new Set();
+    appState.todosBlocos.forEach(b => {
+        if (b.audience) publicosUnicos.add(b.audience.trim());
+    });
+
+    const containerPublico = document.getElementById('filter-publico');
+    if (containerPublico) {
+        containerPublico.innerHTML = '';
+        Array.from(publicosUnicos).sort().forEach(pub => {
+            const btn = document.createElement('button');
+            btn.className = 'chip filter-chip';
+            btn.textContent = pub;
+            btn.dataset.type = 'publico'; 
+            btn.dataset.value = pub;
+            containerPublico.appendChild(btn);
+        });
+    }
+
+    // 3. Renderizar Estilos (Dinâmico)
     const estilosUnicos = new Set();
     appState.todosBlocos.forEach(b => {
         if (b.musical_style) {
@@ -503,7 +524,7 @@ function inicializarFiltrosUI() {
         });
     }
 
-    // 3. Listeners Globais para os Chips de Filtro
+    // 4. Listeners Globais para os Chips de Filtro
     document.querySelectorAll('.filter-chip').forEach(chip => {
         chip.addEventListener('click', (e) => {
             const tipo = e.target.dataset.type;
@@ -524,7 +545,7 @@ function inicializarFiltrosUI() {
         });
     });
 
-    // 4. Botão Toggle do Painel
+    // 5. Botão Toggle do Painel
     const btnToggle = document.getElementById('filter-toggle');
     const panel = document.getElementById('filters-panel');
     if (btnToggle && panel) {
@@ -535,13 +556,14 @@ function inicializarFiltrosUI() {
         });
     }
 
-    // 5. Botão Limpar Filtros
+    // 6. Botão Limpar Filtros
     const btnClean = document.getElementById('btn-clean-filters');
     if (btnClean) {
         btnClean.addEventListener('click', () => {
             appState.filtros.dia = null;
             appState.filtros.turno = null;
             appState.filtros.estilo = null;
+            appState.filtros.publico = null;
             
             document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
             aplicarFiltros();
@@ -549,13 +571,14 @@ function inicializarFiltrosUI() {
     }
 }
 
-// --- FUNÇÃO DE FILTRAGEM ---
+// --- FUNÇÃO DE FILTRAGEM (Atualizada para funcionar em todas as views) ---
 
 function aplicarFiltros() {
     const filtros = appState.filtros;
     const favoritosIds = getFavoritos();
 
     appState.blocosFiltrados = appState.todosBlocos.filter(bloco => {
+        // 1. Busca por texto
         if (filtros.termoBusca) {
             const termo = filtros.termoBusca;
             const nomeMatch = bloco.normalized_name.includes(termo);
@@ -564,20 +587,29 @@ function aplicarFiltros() {
             if (!nomeMatch && !bairroMatch) return false;
         }
 
+        // 2. Filtro de Favoritos (se estiver na aba)
         if (filtros.apenasFavoritos) {
             if (!favoritosIds.includes(bloco.id)) return false;
         }
 
+        // 3. Filtro de Dia
         if (filtros.dia) {
             if (bloco.date !== filtros.dia) return false;
         }
 
+        // 4. Filtro de Público
+        if (filtros.publico) {
+            if (!bloco.audience || bloco.audience !== filtros.publico) return false;
+        }
+
+        // 5. Filtro de Estilo
         if (filtros.estilo) {
             if (!bloco.musical_style) return false;
             const estilosBloco = bloco.musical_style.map(s => s.toLowerCase());
             if (!estilosBloco.includes(filtros.estilo)) return false;
         }
 
+        // 6. Filtro de Turno
         if (filtros.turno && bloco.time) {
             const hora = parseInt(bloco.time.split(':')[0], 10);
             if (filtros.turno === 'manha') {
@@ -592,14 +624,20 @@ function aplicarFiltros() {
         return true;
     });
 
+    // --- ATUALIZAÇÃO VISUAL GLOBAL ---
+    // Verifica qual aba está ativa para atualizar a UI correta
     const viewAtiva = document.querySelector('.active-view');
+    
+    // 1. Se estiver no Mapa, atualiza os pinos
     if (viewAtiva && viewAtiva.id === 'view-mapa') {
         atualizarMarcadores(appState.blocosFiltrados);
     } 
     
+    // 2. Se estiver nos Favoritos, atualiza a Timeline
     if (appState.filtros.apenasFavoritos) {
         renderTimeline(appState.blocosFiltrados, 'lista-favoritos');
     } else {
+        // 3. Se estiver no Explorar, atualiza a lista padrão
         renderBlocos(appState.blocosFiltrados, 'lista-blocos');
     }
 }
@@ -640,7 +678,7 @@ function verificarRoteiroCompartilhado() {
     }
 }
 
-// --- FUNÇÃO PARA PROCESSAR ATALHOS (APP SHORTCUTS) [NOVO] ---
+// --- FUNÇÃO PARA PROCESSAR ATALHOS (APP SHORTCUTS) ---
 function verificarAcoesDeAtalho() {
     const params = new URLSearchParams(window.location.search);
     const action = params.get('action');
