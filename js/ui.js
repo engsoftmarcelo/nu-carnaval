@@ -6,7 +6,6 @@
 import { isFavorito, isCheckedIn } from './storage.js';
 import { getPrevisaoTempo } from './weather.js';
 import { renderDetalheMap } from './map.js'; 
-// --- NOVOS IMPORTS DO FIREBASE ---
 import { getAuth } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 import { enviarVibe, monitorarVibe } from './firebase.js';
 
@@ -119,14 +118,14 @@ export function mostrarDetalhes(bloco) {
     }
 
     // Link do Uber ("Me Leva")
+    // FIX APLICADO: Adicionado !important na cor branca para forçar visibilidade sobre o fundo preto
     let btnUberHtml = '';
     if (bloco.lat && bloco.lng) {
         const nickname = encodeURIComponent(bloco.name);
-        // Deep Link Universal: Abre o app se instalado, senão abre o site mobile
         const uberUrl = `https://m.uber.com/ul/?action=setPickup&client_id=nu_carnaval&pickup=my_location&dropoff[latitude]=${bloco.lat}&dropoff[longitude]=${bloco.lng}&dropoff[nickname]=${nickname}`;
         
         btnUberHtml = `
-            <a href="${uberUrl}" class="detalhe-mapa-btn" style="background-color: #000000; color: #FFFFFF; border-color: #000000; margin-top: 12px;">
+            <a href="${uberUrl}" class="detalhe-mapa-btn" style="background-color: #000000; color: #FFFFFF !important; border-color: #000000; margin-top: 12px;">
                <i class="fab fa-uber"></i> Chamar Uber
             </a>
         `;
@@ -608,12 +607,13 @@ export function renderPoster(blocos) {
             // Formata data simples (31/01)
             const diaMes = bloco.date ? bloco.date.split('-').reverse().slice(0,2).join('/') : '';
             
-            /* FIX MODO NOTURNO: Estilos Inline com !important para garantir fundo branco e texto preto na imagem */
+            // FIX APLICADO: Forçar cor PRETA (#000000 !important) no h3 e fill-color
+            // Isso evita que o Modo Noturno do sistema force o texto para branco sobre o fundo branco.
             html += `
                 <div class="poster-item" style="background-color: #FFFFFF !important; color: #1A1A1A !important; border: 6px solid #1A1A1A !important;">
                     <div class="poster-time" style="background-color: #CCFF00 !important; color: #1A1A1A !important; border: 4px solid #1A1A1A !important;">${bloco.time}</div>
                     <div class="poster-info" style="color: #1A1A1A !important;">
-                        <h3 style="color: #1A1A1A !important; margin-bottom: 8px;">${bloco.name}</h3>
+                        <h3 style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; margin-bottom: 8px;">${bloco.name}</h3>
                         <p style="color: #666666 !important; font-weight: 700;">
                             <i class="fas fa-calendar-alt" style="color: #FF2A00 !important;"></i> ${diaMes} • 
                             <i class="fas fa-map-marker-alt" style="color: #FF2A00 !important;"></i> ${bloco.neighborhood || 'BH'}
