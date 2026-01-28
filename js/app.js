@@ -5,7 +5,6 @@
    ========================================================================== */
 
 import { carregarDados } from './data.js';
-// Adicionada a importação de renderPoster
 import { renderBlocos, mudarVisualizacao, atualizarBotaoFavorito, renderTimeline, renderStats, mostrarDetalhes, renderPoster } from './ui.js';
 import { initMap, atualizarMarcadores, focarCategoriaNoMapa } from './map.js';
 import { getFavoritos, toggleFavorito, importarFavoritos, toggleCheckin, getCheckinCount } from './storage.js';
@@ -333,7 +332,7 @@ function setupEventListeners() {
         });
     }
 
-    // 10. Botão "Manda pro Insta" (Stories)
+    // 10. Botão "Manda pro Insta" (Stories) - VERSÃO DARK MODE & HD
     const btnStories = document.getElementById('btn-stories');
     if (btnStories) {
         btnStories.addEventListener('click', async () => {
@@ -362,7 +361,7 @@ function setupEventListeners() {
                         return dateA - dateB;
                     });
 
-                // 2. Renderiza o HTML oculto
+                // 2. Renderiza o HTML oculto (O ui.js vai aplicar as classes base)
                 renderPoster(blocosFavoritos);
 
                 // Pequeno delay para garantir renderização do DOM/Fontes
@@ -370,18 +369,35 @@ function setupEventListeners() {
 
                 const posterElement = document.getElementById('poster-stories');
 
-                // 3. Gera o Canvas via html2canvas
+                // 3. Gera o Canvas via html2canvas (CONFIGURAÇÃO DARK MODE)
                 const canvas = await html2canvas(posterElement, {
-                    scale: 1, 
+                    scale: 3, // Alta Resolução (HD)
                     useCORS: true,
-                    // FIX: Força a cor de fundo do papel. Se for null, fica transparente e vira preto no Insta Dark Mode.
-                    backgroundColor: '#F0F0EB', 
-                    onclone: (documentoClonado) => {
-                        // Reforço extra: Garante que o elemento clonado tenha a cor correta
-                        const el = documentoClonado.getElementById('poster-stories');
+                    backgroundColor: '#000000', // FUNDO PRETO
+                    logging: false,
+                    onclone: (docClonado) => {
+                        // FORÇA BRUTA DE ESTILO: Garante que nada fique ilegível
+                        const el = docClonado.getElementById('poster-stories');
                         if (el) {
-                            el.style.backgroundColor = '#F0F0EB';
-                            el.style.color = '#1A1A1A';
+                            // Força container principal
+                            el.style.backgroundColor = '#000000';
+                            el.style.color = '#FFFFFF';
+                            
+                            // Força cor BRANCA nos Títulos (h3)
+                            const titulos = el.querySelectorAll('h3');
+                            titulos.forEach(t => {
+                                t.style.color = '#FFFFFF';
+                                t.style.webkitTextFillColor = '#FFFFFF'; // Importante p/ iOS
+                            });
+
+                            // Força cor CINZA CLARO nos textos auxiliares
+                            const infos = el.querySelectorAll('p, span, div');
+                            infos.forEach(i => {
+                                // Não mexe no bloco de hora (que tem fundo colorido) nem no título principal
+                                if (!i.classList.contains('poster-time') && !i.classList.contains('poster-title')) {
+                                    i.style.color = '#EEEEEE';
+                                }
+                            });
                         }
                     }
                 });
@@ -396,7 +412,7 @@ function setupEventListeners() {
                             await navigator.share({
                                 files: [file],
                                 title: 'Meu Roteiro Nu! Carnaval',
-                                text: 'Se liga onde eu vou estar no Carnaval de BH! 🎉'
+                                text: 'Se liga no meu roteiro de Carnaval em BH! 🎉'
                             });
                         } catch (err) {
                             if (err.name !== 'AbortError') console.error(err);

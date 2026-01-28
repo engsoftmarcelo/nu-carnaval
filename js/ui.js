@@ -607,14 +607,13 @@ export function renderPoster(blocos) {
             // Formata data simples (31/01)
             const diaMes = bloco.date ? bloco.date.split('-').reverse().slice(0,2).join('/') : '';
             
-            // FIX APLICADO: Forçar cor PRETA (#000000 !important) no h3 e fill-color
-            // Isso evita que o Modo Noturno do sistema force o texto para branco sobre o fundo branco.
+            // FIX APLICADO: Card Fundo PRETO e Texto/Bordas BRANCAS para contraste na imagem gerada
             html += `
-                <div class="poster-item" style="background-color: #FFFFFF !important; color: #1A1A1A !important; border: 6px solid #1A1A1A !important;">
-                    <div class="poster-time" style="background-color: #CCFF00 !important; color: #1A1A1A !important; border: 4px solid #1A1A1A !important;">${bloco.time}</div>
-                    <div class="poster-info" style="color: #1A1A1A !important;">
-                        <h3 style="color: #000000 !important; -webkit-text-fill-color: #000000 !important; margin-bottom: 8px;">${bloco.name}</h3>
-                        <p style="color: #666666 !important; font-weight: 700;">
+                <div class="poster-item" style="background-color: #1A1A1A !important; color: #FFFFFF !important; border: 6px solid #FFFFFF !important;">
+                    <div class="poster-time" style="background-color: #CCFF00 !important; color: #1A1A1A !important; border: 4px solid #FFFFFF !important;">${bloco.time}</div>
+                    <div class="poster-info" style="color: #FFFFFF !important;">
+                        <h3 style="color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; margin-bottom: 8px;">${bloco.name}</h3>
+                        <p style="color: #DDDDDD !important; font-weight: 700;">
                             <i class="fas fa-calendar-alt" style="color: #FF2A00 !important;"></i> ${diaMes} • 
                             <i class="fas fa-map-marker-alt" style="color: #FF2A00 !important;"></i> ${bloco.neighborhood || 'BH'}
                         </p>
