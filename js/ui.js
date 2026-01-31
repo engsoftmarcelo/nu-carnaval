@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - CORRIGIDO (Leitura de Dados do JSON)
+   Camada de Interface - VERSÃO BAIRROS (Sem Coordenadas Obrigatórias)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn } from './storage.js';
@@ -75,7 +75,7 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
             <div class="empty-state">
                 <i class="far fa-sad-tear" style="font-size: 3rem; margin-bottom: 16px; color: #ccc;"></i>
                 <p>Nu! O trem sumiu.</p>
-                <p style="font-size: 0.9rem; margin-top: 8px;">Não achamos nenhum bloco com esse nome.</p>
+                <p style="font-size: 0.9rem; margin-top: 8px;">Não achamos nenhum bloco com esse filtro.</p>
             </div>
         `;
         return;
@@ -103,7 +103,9 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
         
         const estilos = Array.isArray(bloco.musical_style) ? bloco.musical_style : (bloco['Estilo Musical'] ? [bloco['Estilo Musical']] : []);
         const estilosTags = estilos.map(style => `<span class="tag">${style}</span>`).join(' ');
-        const bairro = bloco.neighborhood || bloco['bairro'] || "BH";
+        
+        // Prioridade para o campo Bairro (novo foco)
+        const bairro = bloco.neighborhood || bloco['bairro'] || "Belo Horizonte";
 
         article.innerHTML = `
             <div class="card-header">
@@ -120,8 +122,13 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
                 </div>
 
                 ${statusHTML}
+                
                 <div class="card-info weather-placeholder" id="weather-${bloco.id}"></div>
-                <div class="card-info"><i class="fas fa-map-marker-alt"></i><span>${bairro}</span></div>
+                
+                <div class="card-info" style="color: var(--color-primary); font-weight: 500;">
+                    <i class="fas fa-map-marker-alt"></i><span>${bairro}</span>
+                </div>
+                
                 <div class="card-tags">${estilosTags}</div>
             </div>
         `;
@@ -137,10 +144,10 @@ async function atualizarClimaDosCards(blocos) {
     for (const bloco of blocos) {
         const lat = bloco.lat || bloco['Latitude Local de Concentração'];
         const lng = bloco.lng || bloco['Longitude Local de Concentração'];
-        const data = bloco.date || bloco['Data']; // Cuidado: formato da data pode variar
+        const data = bloco.date || bloco['Data']; 
 
+        // Só busca clima se tiver coordenadas
         if (lat && lng && data) {
-            // Conversão de data se necessário (DD/MM/YYYY -> YYYY-MM-DD)
             let dataFormatada = data;
             if (data.includes('/')) {
                 dataFormatada = data.split('/').reverse().join('-');
@@ -169,7 +176,6 @@ export async function mostrarDetalhes(bloco) {
 
     const container = document.getElementById('detalhes-conteudo');
     
-    // 1. Extração Segura de Dados
     const publicoTexto = getPublicoDoBloco(bloco);
     const audConfig = getAudienceConfig(publicoTexto);
     
@@ -185,17 +191,20 @@ export async function mostrarDetalhes(bloco) {
     const checkinText = jaFui ? 'Fui e sobrevivi!' : 'Marcar presença';
     const checkinIcon = jaFui ? 'fas fa-check-circle' : 'far fa-circle';
 
-    // Normaliza coordenadas
+    // Normaliza dados de localização
     const lat = bloco.lat || bloco['Latitude Local de Concentração'];
     const lng = bloco.lng || bloco['Longitude Local de Concentração'];
-    const local = bloco.location || bloco['Local de Concentração'];
+    const local = bloco.location || bloco['Local de Concentração'] || 'Local a definir';
     const localFim = bloco.locationEnd || bloco['Local de Dispersão'];
     const nome = bloco.name || bloco['Nome do Bloco'];
+    const bairro = bloco.neighborhood || bloco['bairro'] || 'Belo Horizonte';
 
-    // Links Externos
+    // --- LÓGICA DE MAPAS E UBER (Com Fallback se não tiver coords) ---
     let mapsUrl, btnUberHtml = '';
+    
     if (lat && lng) {
-        mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
+        // Se TEM coordenadas: Link direto e Uber
+        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
         
         const nickname = encodeURIComponent(nome);
         const uberUrl = `https://m.uber.com/ul/?action=setPickup&client_id=nu_carnaval&pickup=my_location&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}&dropoff[nickname]=${nickname}`;
@@ -205,11 +214,13 @@ export async function mostrarDetalhes(bloco) {
             </a>
         `;
     } else {
-        const query = encodeURIComponent((local || nome) + " Belo Horizonte");
+        // Se NÃO tem coordenadas: Busca por texto (Local + Bairro)
+        const query = encodeURIComponent(`${local}, ${bairro}, Belo Horizonte`);
         mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+        // Não mostramos botão de Uber direto pois não temos destino exato, evita erros
     }
 
-    // Previsão do Tempo
+    // Previsão do Tempo (Apenas se tiver coords)
     let weatherHtml = '';
     let dataFormatada = bloco.date || bloco['Data'];
     if (dataFormatada && dataFormatada.includes('/')) {
@@ -230,7 +241,7 @@ export async function mostrarDetalhes(bloco) {
 
     const descricao = bloco.description || bloco['descrisao'] || '';
     const horario = bloco.time || bloco['Horário'];
-    const dataExibicao = (bloco.date || bloco['Data']).split('-').reverse().join('/'); // Garante DD/MM/AAAA se vier ISO
+    const dataExibicao = (bloco.date || bloco['Data']).split('-').reverse().join('/');
 
     // HTML
     container.innerHTML = `
@@ -277,6 +288,9 @@ export async function mostrarDetalhes(bloco) {
                 <h3><i class="fas fa-map-marked-alt"></i> Onde é o trem?</h3>
                 
                 <div class="localizacao-box">
+                     <p style="margin-bottom:8px; color:#666; font-size:0.9rem;">
+                        <i class="fas fa-city"></i> ${bairro}
+                    </p>
                     <div class="loc-row">
                         <div class="dot start"></div>
                         <p><strong>Concentração:</strong> ${local}</p>
@@ -293,7 +307,7 @@ export async function mostrarDetalhes(bloco) {
 
                 <div class="botoes-mapa-grid">
                     <a href="${mapsUrl}" target="_blank" class="detalhe-mapa-btn">
-                        <i class="fas fa-location-arrow"></i> Abrir GPS
+                        <i class="fas fa-location-arrow"></i> ${lat && lng ? 'Abrir no GPS' : 'Buscar no Maps'}
                     </a>
                     ${btnUberHtml}
                 </div>
@@ -327,6 +341,7 @@ export async function mostrarDetalhes(bloco) {
     mudarVisualizacao('view-detalhes');
 
     setTimeout(() => {
+        // Tenta renderizar o mapa se tiver coords, senão mostra aviso
         renderDetalheMap(bloco);
     }, 100);
 
