@@ -1,18 +1,18 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - COMPLETO (Emojis + Botões de Transporte)
+   Camada de Interface - ATUALIZADO (Sem Mapa, Transportes por Texto, Tickets)
    ========================================================================== */
 
-import { isFavorito, isCheckedIn } from './storage.js';
+import { isFavorito, isCheckedIn, toggleFavorito } from './storage.js';
 import { getPrevisaoTempo } from './weather.js';
-import { renderDetalheMap } from './map.js'; 
+// O import do mapa foi removido pois não vamos mais usá-lo na tela de detalhes
 import { getAuth } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 import { enviarVibe, monitorarVibe } from './firebase.js';
 
 let unsubscribeVibe = null;
 
 /**
- * Retorna a configuração de estilo baseada no público (Versão Criativa + Emojis).
+ * Retorna a configuração de estilo baseada no público.
  */
 function getAudienceConfig(publico) {
     if (!publico) return { css: 'aud-todos', icon: 'fas fa-globe-americas', emoji: '🎉' };
@@ -24,7 +24,6 @@ function getAudienceConfig(publico) {
 
     const chave = normalize(publico);
 
-    // Mapeamento: Classe CSS, Ícone FontAwesome e Emoji
     const mapa = {
         'infantil':      { css: 'aud-infantil',      icon: 'fas fa-child',          emoji: '🎈' },
         'crianca':       { css: 'aud-infantil',      icon: 'fas fa-shapes',         emoji: '🍭' },
@@ -49,24 +48,43 @@ function getAudienceConfig(publico) {
 
     if (mapa[chave]) return mapa[chave];
     
-    // Busca parcial (ex: "bloco lgbt" encontra a chave "lgbt")
     for (const [key, val] of Object.entries(mapa)) {
         if (chave.includes(key)) return val;
     }
 
-    // Default festivo
     return { css: 'aud-todos', icon: 'fas fa-bullhorn', emoji: '🎊' };
 }
 
-/**
- * Função auxiliar para extrair o público do bloco.
- */
 function getPublicoDoBloco(bloco) {
     return bloco.audience || 
            bloco['Público-Alvo Principal'] || 
            bloco['Público-Alvo'] || 
            bloco['publico'] || 
            'Geral';
+}
+
+function getCountdownHTML(dataStr, horaStr) {
+    if (!dataStr || !horaStr) return '';
+    
+    let dataIso = dataStr.includes('/') ? dataStr.split('/').reverse().join('-') : dataStr;
+    const dataBloco = new Date(`${dataIso}T${horaStr}:00`);
+    const agora = new Date();
+    const diffMs = dataBloco - agora;
+
+    if (diffMs < 0) {
+        if (Math.abs(diffMs) < 5 * 60 * 60 * 1000) {
+            return '<div class="hype-counter" style="background:var(--color-live); color:#000; border-color:#000;">🔥 TÁ ROLANDO AGORA!</div>';
+        }
+        return ''; 
+    }
+
+    const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const horas = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    if (dias > 0) return `<div class="hype-counter">⏳ Faltam ${dias} dias e ${horas}h</div>`;
+    if (horas > 0) return `<div class="hype-counter" style="background:#CCFF00; color:#000;">⚡ É HOJE! Faltam ${horas}h</div>`;
+    
+    return '<div class="hype-counter" style="background:#FF2A00; color:#FFF;">🚀 PREPARA! É JÁ JÁ!</div>';
 }
 
 export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
@@ -89,11 +107,9 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
     listaBlocos.forEach(bloco => {
         const article = document.createElement('article');
         
-        // Configuração de Estilo e Público (com Emoji)
         const publicoTexto = getPublicoDoBloco(bloco);
         const config = getAudienceConfig(publicoTexto);
         
-        // Classe específica para colorir bordas/sombras via CSS
         article.className = `bloco-card ${config.css}`;
         
         article.onclick = (e) => {
@@ -113,28 +129,22 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
         article.innerHTML = `
             <div class="card-header">
                 <div class="card-emoji-badge">${config.emoji}</div>
-                
                 <h3>${bloco.name || bloco['Nome do Bloco']}</h3>
                 <button class="fav-btn ${favoritoClass}" data-id="${bloco.id}">
                     <i class="${iconHeart}"></i>
                 </button>
             </div>
             <div class="card-body">
-                
                 <div class="audience-tag">
                     <i class="${config.icon}"></i>
                     <span>${publicoTexto}</span>
                 </div>
-
                 ${statusHTML}
-                
                 <div class="card-info weather-placeholder" id="weather-${bloco.id}"></div>
-                
                 <div class="card-info" style="color: var(--color-text); opacity: 0.9;">
                     <i class="fas fa-map-marker-alt" style="color: var(--aud-color);"></i>
                     <span>${bairro}</span>
                 </div>
-                
                 <div class="card-tags">${estilosTags}</div>
             </div>
         `;
@@ -173,6 +183,7 @@ async function atualizarClimaDosCards(blocos) {
     }
 }
 
+// --- FUNÇÃO PRINCIPAL DE DETALHES (ATUALIZADA) ---
 export async function mostrarDetalhes(bloco) {
     if (unsubscribeVibe) {
         unsubscribeVibe();
@@ -181,191 +192,172 @@ export async function mostrarDetalhes(bloco) {
 
     const container = document.getElementById('detalhes-conteudo');
     
-    // Configurações visuais do detalhe
+    // 1. Configurações Visuais
     const publicoTexto = getPublicoDoBloco(bloco);
     const audConfig = getAudienceConfig(publicoTexto);
-    
-    let estilosMusicais = 'Diversos';
-    if (Array.isArray(bloco.musical_style)) {
-        estilosMusicais = bloco.musical_style.join(' • ');
-    } else if (bloco['Estilo Musical']) {
-        estilosMusicais = bloco['Estilo Musical'];
+    const estilosMusicais = Array.isArray(bloco.musical_style) ? bloco.musical_style.join(' • ') : (bloco['Estilo Musical'] || 'Diversos');
+
+    // 2. Lógica do Header (Botão Favorito)
+    const btnFavHeader = document.getElementById('btn-fav-detalhe');
+    if (btnFavHeader) {
+        const updateFavState = () => {
+            const isFav = isFavorito(bloco.id);
+            if(isFav) {
+                btnFavHeader.classList.add('favorited');
+                btnFavHeader.innerHTML = '<i class="fas fa-heart"></i>';
+            } else {
+                btnFavHeader.classList.remove('favorited');
+                btnFavHeader.innerHTML = '<i class="far fa-heart"></i>';
+            }
+        };
+        updateFavState();
+        
+        // Clone para limpar eventos anteriores
+        const newBtnFav = btnFavHeader.cloneNode(true);
+        btnFavHeader.parentNode.replaceChild(newBtnFav, btnFavHeader);
+        
+        newBtnFav.addEventListener('click', () => {
+            toggleFavorito(bloco.id);
+            updateFavState();
+            if(navigator.vibrate) navigator.vibrate(50);
+        });
     }
 
-    const jaFui = isCheckedIn(bloco.id);
-    const checkinClass = jaFui ? 'checked' : '';
-    const checkinText = jaFui ? 'Fui e sobrevivi!' : 'Marcar presença';
-    const checkinIcon = jaFui ? 'fas fa-check-circle' : 'far fa-circle';
-
-    // Normaliza dados de localização
-    const lat = bloco.lat || bloco['Latitude Local de Concentração'];
-    const lng = bloco.lng || bloco['Longitude Local de Concentração'];
-    const local = bloco.location || bloco['Local de Concentração'] || 'Local a definir';
-    const localFim = bloco.locationEnd || bloco['Local de Dispersão'];
+    // 3. Dados do Bloco
     const nome = bloco.name || bloco['Nome do Bloco'];
     const bairro = bloco.neighborhood || bloco['bairro'] || 'Belo Horizonte';
-
-    // --- LÓGICA DE TRANSPORTES E MAPAS ---
-    let transportesHtml = '';
-    let mapsUrl, mapsLabel;
-    
-    if (lat && lng) {
-        // Tem coordenadas: Link direto pro GPS
-        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-        mapsLabel = 'Abrir no GPS';
-        
-        // Adiciona botões de Uber e 99
-        const nickname = encodeURIComponent(nome);
-        const uberUrl = `https://m.uber.com/ul/?action=setPickup&client_id=nu_carnaval&pickup=my_location&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}&dropoff[nickname]=${nickname}`;
-        const url99 = `https://d.99app.com/`; 
-
-        transportesHtml = `
-            <a href="${mapsUrl}" target="_blank" class="btn-transport btn-maps">
-                <i class="fas fa-location-arrow"></i> ${mapsLabel}
-            </a>
-            <a href="${uberUrl}" target="_blank" class="btn-transport btn-uber">
-                <i class="fab fa-uber"></i> Uber
-            </a>
-            <a href="${url99}" target="_blank" class="btn-transport btn-99">
-                <span class="icon-99">99</span> Pop
-            </a>
-        `;
-    } else {
-        // Sem coordenadas: Busca por texto no Maps e não mostra apps de corrida
-        const query = encodeURIComponent(`${local}, ${bairro}, Belo Horizonte`);
-        mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
-        mapsLabel = 'Buscar no Maps';
-
-        transportesHtml = `
-            <a href="${mapsUrl}" target="_blank" class="btn-transport btn-maps" style="grid-column: span 2;">
-                <i class="fas fa-search-location"></i> ${mapsLabel}
-            </a>
-        `;
-    }
-
-    // Previsão do Tempo
-    let weatherHtml = '';
-    let dataFormatada = bloco.date || bloco['Data'];
-    if (dataFormatada && dataFormatada.includes('/')) {
-        dataFormatada = dataFormatada.split('/').reverse().join('-');
-    }
-
-    if (lat && lng && dataFormatada) {
-        const clima = await getPrevisaoTempo(lat, lng, dataFormatada);
-        if (clima) {
-            weatherHtml = `
-                <div class="detalhe-clima ${clima.icone.includes('rain') ? 'chuva' : 'sol'}">
-                    <i class="fas ${clima.icone}"></i>
-                    <span>Previsão: <strong>${clima.tempMax}°C</strong> (${clima.resumo || 'Sem chuva'})</span>
-                </div>
-            `;
-        }
-    }
-
-    const descricao = bloco.description || bloco['descrisao'] || '';
+    const local = bloco.location || bloco['Local de Concentração'] || 'Local a definir';
     const horario = bloco.time || bloco['Horário'];
-    const dataExibicao = (bloco.date || bloco['Data']).split('-').reverse().join('/');
+    const dataOriginal = bloco.date || bloco['Data'];
+    const dataExibicao = dataOriginal.split('-').reverse().join('/'); // Ex: 15/02/2026
+    
+    // Pega apenas "15/02" para o visual do ticket
+    const diaMesTicket = dataExibicao.substring(0, 5); 
+    const descricao = bloco.description || bloco['descrisao'] || '';
 
-    // Renderização do HTML
+    // 4. Countdown
+    const countdownHTML = getCountdownHTML(dataOriginal, horario);
+
+    // 5. LÓGICA DE TRANSPORTE (POR TEXTO - SEM COORDENADAS)
+    // Isso garante que os botões sempre apareçam
+    const enderecoBusca = encodeURIComponent(`${local}, ${bairro}, Belo Horizonte, MG`);
+    const apelidoLocal = encodeURIComponent(nome);
+
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${enderecoBusca}`;
+    // Tenta usar formatted_address para ajudar o Uber a encontrar o local
+    const uberUrl = `https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]=${enderecoBusca}&dropoff[nickname]=${apelidoLocal}`;
+    const url99 = `https://d.99app.com/`; // Link genérico pois deep link da 99 é instável com busca de texto
+
+    // 6. Renderização HTML
     container.innerHTML = `
         <div class="detalhe-wrapper ${audConfig.css}">
             
             <div class="detalhe-hero">
                 <div class="detalhe-header-top">
-                    <span class="audience-pill" style="background-color: var(--aud-color); color: #fff; border: 1px solid #000;">
-                        <i class="${audConfig.icon}" style="color: #000;"></i> ${publicoTexto} ${audConfig.emoji}
+                    <span class="audience-pill" style="background-color: var(--aud-color);">
+                        <i class="${audConfig.icon}"></i> ${publicoTexto}
                     </span>
                     ${getStatusPill(bloco)}
                 </div>
 
                 <h1 class="detalhe-titulo">${nome}</h1>
-                <p class="detalhe-subtitulo">${estilosMusicais}</p>
+                <p class="detalhe-subtitulo" style="font-size: 1.1rem; color: #555;">${estilosMusicais}</p>
+                
+                ${countdownHTML}
 
-                ${weatherHtml}
-                
-                ${descricao ? `<div class="detalhe-descricao">"${descricao}"</div>` : ''}
-                
                 <div class="detalhe-grid-info">
                     <div class="info-item">
                         <i class="far fa-calendar-alt"></i>
-                        <div>
-                            <span class="label">Data</span>
-                            <span class="valor">${dataExibicao}</span>
-                        </div>
+                        <span class="label">Dia</span>
+                        <span class="valor">${diaMesTicket}</span>
                     </div>
                     <div class="info-item">
                         <i class="far fa-clock"></i>
-                        <div>
-                            <span class="label">Início</span>
-                            <span class="valor">${horario}</span>
-                        </div>
+                        <span class="label">Hora</span>
+                        <span class="valor">${horario}</span>
                     </div>
                 </div>
 
-                <button id="btn-checkin-action" class="btn-checkin ${checkinClass}" data-id="${bloco.id}">
-                    <i class="${checkinIcon}"></i> <span>${checkinText}</span>
+                <div id="weather-slot" style="margin-top: 8px;"></div>
+                
+                ${descricao ? `<div class="detalhe-descricao">"${descricao}"</div>` : ''}
+
+                <button id="btn-checkin-action" class="btn-checkin ${isCheckedIn(bloco.id) ? 'checked' : ''}" data-id="${bloco.id}">
+                    <i class="${isCheckedIn(bloco.id) ? 'fas fa-check-circle' : 'far fa-circle'}"></i> 
+                    <span>${isCheckedIn(bloco.id) ? 'Fui e sobrevivi!' : 'Marcar presença'}</span>
                 </button>
             </div>
 
             <div class="utility-card">
-                <h3><i class="fas fa-map-marked-alt"></i> Onde é o trem?</h3>
+                <h3><i class="fas fa-map-marked-alt"></i> Como Chegar</h3>
                 
-                <div class="localizacao-box">
-                     <p style="margin-bottom:8px; color:#666; font-size:0.9rem;">
-                        <i class="fas fa-city"></i> ${bairro}
-                    </p>
-                    <div class="loc-row">
-                        <div class="dot start"></div>
-                        <p><strong>Concentração:</strong> ${local}</p>
-                    </div>
-                    ${localFim ? `
-                    <div class="loc-connector"></div>
-                    <div class="loc-row">
-                        <div class="dot end"></div>
-                        <p><strong>Dispersão:</strong> ${localFim}</p>
-                    </div>` : ''}
+                <div class="card-local-texto">
+                    <h4 style="margin-bottom:4px; color:#1A1A1A; font-size:1.1rem;">${local}</h4>
+                    <p style="color:#666; font-weight:bold;">${bairro}</p>
                 </div>
 
-                <div id="detalhe-mapa-interno" class="mapa-preview" style="display:none;"></div>
+                <p style="font-size:0.9rem; color:#888; margin-bottom:12px; text-align:center;">
+                    Escolha seu app preferido para ir:
+                </p>
 
                 <div class="botoes-mapa-grid">
-                    ${transportesHtml}
+                    <a href="${uberUrl}" class="btn-transport btn-uber">
+                        <i class="fab fa-uber"></i> Chamar Uber
+                    </a>
+                    <a href="${url99}" target="_blank" class="btn-transport btn-99">
+                        <span class="icon-99">99</span> Chamar 99
+                    </a>
+                    <a href="${mapsUrl}" target="_blank" class="btn-transport btn-maps">
+                        <i class="fas fa-location-arrow"></i> Ver no Maps
+                    </a>
                 </div>
             </div>
 
             <div class="vibe-section utility-card">
-                <h3 style="color: var(--color-primary);"><i class="fas fa-satellite-dish"></i> Vibe Check (Ao Vivo)</h3>
-                <p style="font-size: 0.9rem; margin-bottom: 12px; color: #666;">O que tá rolando agora?</p>
-                
+                <h3 style="color: var(--color-primary);"><i class="fas fa-satellite-dish"></i> Vibe Check</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 12px; color: #666;">Como tá o bloco agora?</p>
+
                 <div id="vibe-display" class="vibe-display loading">
                     <span class="vibe-status">Carregando...</span>
                     <div class="vibe-badges"></div>
                 </div>
-
                 <div id="vibe-controls" class="vibe-controls">
-                    ${ getAuth().currentUser ? `
+                     ${ getAuth().currentUser ? `
                         <button class="btn-vibe btn-fogo" data-tipo="fogo">🔥<br>Fervendo</button>
                         <button class="btn-vibe btn-morto" data-tipo="morto">💀<br>Morgado</button>
                         <button class="btn-vibe btn-policia" data-tipo="policia">👮<br>Polícia</button>
                     ` : `
-                        <div class="login-lock">
-                            <i class="fas fa-lock"></i> <span>Faça login para avisar a galera!</span>
-                        </div>
+                        <div class="login-lock"><i class="fas fa-lock"></i> Faça login para votar!</div>
                     `}
                 </div>
             </div>
-            
+
             <div style="height: 100px;"></div>
         </div>`;
 
+    // 7. Transição
     mudarVisualizacao('view-detalhes');
 
-    setTimeout(() => {
-        // Mantemos a chamada para compatibilidade caso o mapa interno seja reativado
-        renderDetalheMap(bloco);
-    }, 100);
-
-    iniciarVibeCheck(bloco);
+    // 8. Pós-Render
+    requestAnimationFrame(() => {
+        // Renderiza Clima apenas se tiver coords (mantivemos essa verificação p/ clima pois precisa de precisão)
+        // Se quiser clima genérico de BH, teríamos que mudar a lógica do weather.js
+        if (bloco.lat && bloco.lng) {
+            const dataFormatada = dataOriginal.split('/').reverse().join('-');
+            getPrevisaoTempo(bloco.lat, bloco.lng, dataFormatada).then(clima => {
+                const el = document.getElementById('weather-slot');
+                if (el && clima) {
+                    el.innerHTML = `
+                        <div class="detalhe-clima ${clima.icone.includes('rain') ? 'chuva' : 'sol'}">
+                            <i class="fas ${clima.icone}"></i>
+                            <span>Previsão: <strong>${clima.tempMax}°C</strong> (${clima.resumo || 'Sem chuva'})</span>
+                        </div>`;
+                }
+            });
+        }
+        
+        iniciarVibeCheck(bloco);
+    });
 }
 
 function getStatusPill(bloco) {

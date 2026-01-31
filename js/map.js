@@ -285,29 +285,74 @@ export function focarCategoriaNoMapa(categoria) {
 }
 
 // --- PLACEHOLDER: Atualizar Marcadores ---
-// Como não usamos mais marcadores de blocos, essa função fica vazia
-// para não quebrar chamadas antigas no app.js
 export function atualizarMarcadores(blocos) {
     // Lógica desativada: Blocos agora são acessados via clique no Bairro
     // Se quiser, pode limpar layers antigos aqui
-    if (markersLayer) markersLayer.clearLayers();
+    // if (markersLayer) markersLayer.clearLayers();
 }
 
-// --- MAPA DE DETALHES (Mantido para mostrar trajeto SE houver coords no futuro) ---
+// --- MAPA DE DETALHES (MINIATURA) ---
 export function renderDetalheMap(bloco) {
-    // Mantém a lógica de mini-mapa caso algum bloco especial tenha trajeto
-    // Se não tiver lat/lng, mostra mensagem de indisponível.
     const containerId = 'detalhe-mapa-interno';
     const container = document.getElementById(containerId);
+    
+    // Limpa o container e garante que está visível
     if (!container) return;
+    container.innerHTML = ''; 
+    container.style.display = 'block';
 
-    if ((!bloco.lat || !bloco.lng) && (!bloco.latDisp)) {
-        container.innerHTML = `<div style="height:100%; display:flex; align-items:center; justify-content:center; background:#f0f0f0; color:#888; text-align:center; padding:20px;">
-            <p>📍 Mapa do trajeto não disponível<br><small>Confira o local: ${bloco.location || 'Não informado'}</small></p>
-        </div>`;
+    // Validação de coordenadas
+    if (!bloco.lat || !bloco.lng) {
+        container.innerHTML = `
+            <div style="height:100%; display:flex; align-items:center; justify-content:center; background:#f0f0f0; color:#888; text-align:center; padding:20px;">
+                <p>📍 Mapa indisponível para este local.<br><small>${bloco.location || ''}</small></p>
+            </div>`;
         return;
     }
+
+    // Cria o mapa (Instância única ou recriada)
+    // Removemos instância anterior se houver (mas como limpamos innerHTML, o DOM se foi)
+    // Para evitar erro "Map container is already initialized", garantimos que o container está limpo
     
-    // ... Resto da lógica original de renderDetalheMap se quiser manter suporte a trajetos ...
-    // Para simplificar e garantir que não quebre com dados vazios, deixamos o fallback acima.
+    const mapDetalhe = L.map(containerId, {
+        zoomControl: false,
+        dragging: false,       // Mapa estático (apenas visualização)
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        attributionControl: false
+    }).setView([bloco.lat, bloco.lng], 15);
+
+    // Tiles Clean (Voyager)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19
+    }).addTo(mapDetalhe);
+
+    // Marcador do Bloco
+    L.marker([bloco.lat, bloco.lng], {
+        icon: L.divIcon({
+            className: 'custom-pin',
+            html: `<div style="font-size:2rem; filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.3));">📍</div>`, 
+            iconSize: [30, 30],
+            iconAnchor: [15, 30]
+        })
+    }).addTo(mapDetalhe);
+
+    // Adiciona botão para abrir no App de Mapas externo (Overlay)
+    const overlayBtn = document.createElement('div');
+    overlayBtn.style.cssText = `
+        position: absolute; bottom: 10px; right: 10px; z-index: 1000;
+        background: white; padding: 6px 12px; border: 2px solid black;
+        font-weight: bold; font-size: 0.8rem; cursor: pointer;
+        box-shadow: 2px 2px 0px rgba(0,0,0,0.2); border-radius: 4px;
+        display: flex; align-items: center; gap: 6px;
+    `;
+    overlayBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> <span>Expandir</span>';
+    overlayBtn.onclick = () => window.open(`https://www.google.com/maps/search/?api=1&query=${bloco.lat},${bloco.lng}`, '_blank');
+    
+    // Pequena animação ao passar o mouse
+    overlayBtn.onmouseover = () => overlayBtn.style.transform = "scale(1.05)";
+    overlayBtn.onmouseout = () => overlayBtn.style.transform = "scale(1)";
+
+    container.appendChild(overlayBtn);
 }
