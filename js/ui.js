@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - VERSÃO BAIRROS (Sem Coordenadas Obrigatórias)
+   Camada de Interface - COMPLETO (Emojis + Botões de Transporte)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn } from './storage.js';
@@ -12,12 +12,11 @@ import { enviarVibe, monitorarVibe } from './firebase.js';
 let unsubscribeVibe = null;
 
 /**
- * Retorna a configuração de estilo baseada no público (Versão Blindada).
+ * Retorna a configuração de estilo baseada no público (Versão Criativa + Emojis).
  */
 function getAudienceConfig(publico) {
-    if (!publico) return { css: 'aud-todos', icon: 'fas fa-globe-americas' };
+    if (!publico) return { css: 'aud-todos', icon: 'fas fa-globe-americas', emoji: '🎉' };
 
-    // Normaliza: remove acentos e deixa minúsculo
     const normalize = (str) => str.toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
@@ -25,38 +24,42 @@ function getAudienceConfig(publico) {
 
     const chave = normalize(publico);
 
+    // Mapeamento: Classe CSS, Ícone FontAwesome e Emoji
     const mapa = {
-        'adulto':            { css: 'aud-adulto',       icon: 'fas fa-wine-glass-alt' },
-        'cultural':          { css: 'aud-cultural',     icon: 'fas fa-theater-masks' },
-        'familia':           { css: 'aud-familia',      icon: 'fas fa-users' },
-        'infantil':          { css: 'aud-infantil',     icon: 'fas fa-child' },
-        'crianca':           { css: 'aud-infantil',     icon: 'fas fa-child' },
-        'jovem':             { css: 'aud-jovem',        icon: 'fas fa-bolt' },
-        'universitario':     { css: 'aud-universitario', icon: 'fas fa-graduation-cap' },
-        'lgbt':              { css: 'aud-lgbt',         icon: 'fas fa-rainbow' },
-        'gay':               { css: 'aud-lgbt',         icon: 'fas fa-rainbow' },
-        'mulheres':          { css: 'aud-mulheres',     icon: 'fas fa-venus' },
-        'feminino':          { css: 'aud-mulheres',     icon: 'fas fa-venus' },
-        'social':            { css: 'aud-social',       icon: 'fas fa-hands-helping' },
-        'terceira idade':    { css: 'aud-terceira',     icon: 'fas fa-blind' },
-        'idoso':             { css: 'aud-terceira',     icon: 'fas fa-blind' },
-        'torcedores':        { css: 'aud-torcedores',   icon: 'fas fa-futbol' },
-        'todos':             { css: 'aud-todos',        icon: 'fas fa-globe-americas' },
-        'geral':             { css: 'aud-todos',        icon: 'fas fa-globe-americas' }
+        'infantil':      { css: 'aud-infantil',      icon: 'fas fa-child',          emoji: '🎈' },
+        'crianca':       { css: 'aud-infantil',      icon: 'fas fa-shapes',         emoji: '🍭' },
+        'familia':       { css: 'aud-familia',       icon: 'fas fa-users',          emoji: '👨‍👩‍👧‍👦' },
+        'lgbt':          { css: 'aud-lgbt',          icon: 'fas fa-rainbow',        emoji: '🏳️‍🌈' },
+        'gay':           { css: 'aud-lgbt',          icon: 'fas fa-transgender',    emoji: '🦄' },
+        'afro':          { css: 'aud-cultural',      icon: 'fas fa-drum',           emoji: '✊🏿' },
+        'cultural':      { css: 'aud-cultural',      icon: 'fas fa-theater-masks',  emoji: '🎭' },
+        'rock':          { css: 'aud-rock',          icon: 'fas fa-hand-rock',      emoji: '🤘' },
+        'alternativo':   { css: 'aud-rock',          icon: 'fas fa-guitar',         emoji: '🎸' },
+        'universitario': { css: 'aud-universitario', icon: 'fas fa-graduation-cap', emoji: '🍻' },
+        'jovem':         { css: 'aud-jovem',         icon: 'fas fa-bolt',           emoji: '⚡' },
+        'terceira':      { css: 'aud-terceira',      icon: 'fas fa-heart',          emoji: '💃' },
+        'idoso':         { css: 'aud-terceira',      icon: 'fas fa-star',           emoji: '🌟' },
+        'religioso':     { css: 'aud-religioso',     icon: 'fas fa-praying-hands',  emoji: '🙌' },
+        'torcida':       { css: 'aud-torcedores',    icon: 'fas fa-futbol',         emoji: '⚽' },
+        'pet':           { css: 'aud-pet',           icon: 'fas fa-paw',            emoji: '🐶' },
+        'mulheres':      { css: 'aud-mulheres',      icon: 'fas fa-venus',          emoji: '💄' },
+        'adulto':        { css: 'aud-adulto',        icon: 'fas fa-wine-glass-alt', emoji: '🍸' },
+        'geral':         { css: 'aud-todos',         icon: 'fas fa-globe-americas', emoji: '🎉' }
     };
 
     if (mapa[chave]) return mapa[chave];
     
+    // Busca parcial (ex: "bloco lgbt" encontra a chave "lgbt")
     for (const [key, val] of Object.entries(mapa)) {
         if (chave.includes(key)) return val;
     }
 
-    return mapa['todos'];
+    // Default festivo
+    return { css: 'aud-todos', icon: 'fas fa-bullhorn', emoji: '🎊' };
 }
 
 /**
- * Função auxiliar para extrair o público do bloco, 
- * independente de como está escrito no JSON.
+ * Função auxiliar para extrair o público do bloco.
  */
 function getPublicoDoBloco(bloco) {
     return bloco.audience || 
@@ -86,11 +89,12 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
     listaBlocos.forEach(bloco => {
         const article = document.createElement('article');
         
-        // 1. Extrai o público usando a função segura
+        // Configuração de Estilo e Público (com Emoji)
         const publicoTexto = getPublicoDoBloco(bloco);
-        const audienceConfig = getAudienceConfig(publicoTexto);
+        const config = getAudienceConfig(publicoTexto);
         
-        article.className = `bloco-card ${audienceConfig.css}`;
+        // Classe específica para colorir bordas/sombras via CSS
+        article.className = `bloco-card ${config.css}`;
         
         article.onclick = (e) => {
             if (e.target.closest('.fav-btn')) return;
@@ -104,11 +108,12 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
         const estilos = Array.isArray(bloco.musical_style) ? bloco.musical_style : (bloco['Estilo Musical'] ? [bloco['Estilo Musical']] : []);
         const estilosTags = estilos.map(style => `<span class="tag">${style}</span>`).join(' ');
         
-        // Prioridade para o campo Bairro (novo foco)
         const bairro = bloco.neighborhood || bloco['bairro'] || "Belo Horizonte";
 
         article.innerHTML = `
             <div class="card-header">
+                <div class="card-emoji-badge">${config.emoji}</div>
+                
                 <h3>${bloco.name || bloco['Nome do Bloco']}</h3>
                 <button class="fav-btn ${favoritoClass}" data-id="${bloco.id}">
                     <i class="${iconHeart}"></i>
@@ -117,7 +122,7 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
             <div class="card-body">
                 
                 <div class="audience-tag">
-                    <i class="${audienceConfig.icon}"></i>
+                    <i class="${config.icon}"></i>
                     <span>${publicoTexto}</span>
                 </div>
 
@@ -125,8 +130,9 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
                 
                 <div class="card-info weather-placeholder" id="weather-${bloco.id}"></div>
                 
-                <div class="card-info" style="color: var(--color-primary); font-weight: 500;">
-                    <i class="fas fa-map-marker-alt"></i><span>${bairro}</span>
+                <div class="card-info" style="color: var(--color-text); opacity: 0.9;">
+                    <i class="fas fa-map-marker-alt" style="color: var(--aud-color);"></i>
+                    <span>${bairro}</span>
                 </div>
                 
                 <div class="card-tags">${estilosTags}</div>
@@ -146,7 +152,6 @@ async function atualizarClimaDosCards(blocos) {
         const lng = bloco.lng || bloco['Longitude Local de Concentração'];
         const data = bloco.date || bloco['Data']; 
 
-        // Só busca clima se tiver coordenadas
         if (lat && lng && data) {
             let dataFormatada = data;
             if (data.includes('/')) {
@@ -176,6 +181,7 @@ export async function mostrarDetalhes(bloco) {
 
     const container = document.getElementById('detalhes-conteudo');
     
+    // Configurações visuais do detalhe
     const publicoTexto = getPublicoDoBloco(bloco);
     const audConfig = getAudienceConfig(publicoTexto);
     
@@ -199,28 +205,45 @@ export async function mostrarDetalhes(bloco) {
     const nome = bloco.name || bloco['Nome do Bloco'];
     const bairro = bloco.neighborhood || bloco['bairro'] || 'Belo Horizonte';
 
-    // --- LÓGICA DE MAPAS E UBER (Com Fallback se não tiver coords) ---
-    let mapsUrl, btnUberHtml = '';
+    // --- LÓGICA DE TRANSPORTES E MAPAS ---
+    let transportesHtml = '';
+    let mapsUrl, mapsLabel;
     
     if (lat && lng) {
-        // Se TEM coordenadas: Link direto e Uber
+        // Tem coordenadas: Link direto pro GPS
         mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+        mapsLabel = 'Abrir no GPS';
         
+        // Adiciona botões de Uber e 99
         const nickname = encodeURIComponent(nome);
         const uberUrl = `https://m.uber.com/ul/?action=setPickup&client_id=nu_carnaval&pickup=my_location&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}&dropoff[nickname]=${nickname}`;
-        btnUberHtml = `
-            <a href="${uberUrl}" class="btn-uber">
-               <i class="fab fa-uber"></i> Chamar Uber
+        const url99 = `https://d.99app.com/`; 
+
+        transportesHtml = `
+            <a href="${mapsUrl}" target="_blank" class="btn-transport btn-maps">
+                <i class="fas fa-location-arrow"></i> ${mapsLabel}
+            </a>
+            <a href="${uberUrl}" target="_blank" class="btn-transport btn-uber">
+                <i class="fab fa-uber"></i> Uber
+            </a>
+            <a href="${url99}" target="_blank" class="btn-transport btn-99">
+                <span class="icon-99">99</span> Pop
             </a>
         `;
     } else {
-        // Se NÃO tem coordenadas: Busca por texto (Local + Bairro)
+        // Sem coordenadas: Busca por texto no Maps e não mostra apps de corrida
         const query = encodeURIComponent(`${local}, ${bairro}, Belo Horizonte`);
         mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
-        // Não mostramos botão de Uber direto pois não temos destino exato, evita erros
+        mapsLabel = 'Buscar no Maps';
+
+        transportesHtml = `
+            <a href="${mapsUrl}" target="_blank" class="btn-transport btn-maps" style="grid-column: span 2;">
+                <i class="fas fa-search-location"></i> ${mapsLabel}
+            </a>
+        `;
     }
 
-    // Previsão do Tempo (Apenas se tiver coords)
+    // Previsão do Tempo
     let weatherHtml = '';
     let dataFormatada = bloco.date || bloco['Data'];
     if (dataFormatada && dataFormatada.includes('/')) {
@@ -243,14 +266,14 @@ export async function mostrarDetalhes(bloco) {
     const horario = bloco.time || bloco['Horário'];
     const dataExibicao = (bloco.date || bloco['Data']).split('-').reverse().join('/');
 
-    // HTML
+    // Renderização do HTML
     container.innerHTML = `
         <div class="detalhe-wrapper ${audConfig.css}">
             
             <div class="detalhe-hero">
                 <div class="detalhe-header-top">
-                    <span class="audience-pill" style="background-color: var(--aud-color);">
-                        <i class="${audConfig.icon}" style="color: #000;"></i> ${publicoTexto}
+                    <span class="audience-pill" style="background-color: var(--aud-color); color: #fff; border: 1px solid #000;">
+                        <i class="${audConfig.icon}" style="color: #000;"></i> ${publicoTexto} ${audConfig.emoji}
                     </span>
                     ${getStatusPill(bloco)}
                 </div>
@@ -303,13 +326,10 @@ export async function mostrarDetalhes(bloco) {
                     </div>` : ''}
                 </div>
 
-                <div id="detalhe-mapa-interno" class="mapa-preview"></div>
+                <div id="detalhe-mapa-interno" class="mapa-preview" style="display:none;"></div>
 
                 <div class="botoes-mapa-grid">
-                    <a href="${mapsUrl}" target="_blank" class="detalhe-mapa-btn">
-                        <i class="fas fa-location-arrow"></i> ${lat && lng ? 'Abrir no GPS' : 'Buscar no Maps'}
-                    </a>
-                    ${btnUberHtml}
+                    ${transportesHtml}
                 </div>
             </div>
 
@@ -341,7 +361,7 @@ export async function mostrarDetalhes(bloco) {
     mudarVisualizacao('view-detalhes');
 
     setTimeout(() => {
-        // Tenta renderizar o mapa se tiver coords, senão mostra aviso
+        // Mantemos a chamada para compatibilidade caso o mapa interno seja reativado
         renderDetalheMap(bloco);
     }, 100);
 
@@ -349,7 +369,6 @@ export async function mostrarDetalhes(bloco) {
 }
 
 function getStatusPill(bloco) {
-    // Normalização de chaves para status
     const data = bloco.date || bloco['Data'];
     const hora = bloco.time || bloco['Horário'];
     
@@ -517,7 +536,6 @@ function getStatusHTML(bloco) {
     if (isRolando) {
         return `<div class="status-live" style="background:var(--color-cta); color:black; border:2px solid black; padding:2px 6px; font-weight:800; transform:rotate(-1deg);">TÁ ROLANDO!</div>`;
     } else {
-        // Exibe DD/MM
         const diaMes = data.includes('-') ? data.split('-').reverse().slice(0, 2).join('/') : data.substring(0, 5);
         return `<div class="card-info"><i class="far fa-clock"></i><span style="font-weight:700; color: var(--color-asphalt);">${diaMes} às ${hora}</span></div>`;
     }
@@ -541,7 +559,6 @@ export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
     const gruposPorData = {};
     listaBlocos.forEach(bloco => {
         const data = bloco.date || bloco['Data'];
-        // Normaliza para YYYY-MM-DD para agrupar corretamente
         let dataKey = data;
         if (data.includes('/')) dataKey = data.split('/').reverse().join('-');
 
@@ -602,7 +619,11 @@ export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
 
 function criarCardTimeline(bloco) {
     const article = document.createElement('article');
-    article.className = 'bloco-card';
+    // Consistência visual com os cards principais
+    const publicoTexto = getPublicoDoBloco(bloco);
+    const config = getAudienceConfig(publicoTexto);
+    
+    article.className = `bloco-card ${config.css}`;
     article.onclick = (e) => {
         if (e.target.closest('.fav-btn')) return;
         mostrarDetalhes(bloco); 
@@ -614,6 +635,7 @@ function criarCardTimeline(bloco) {
 
     article.innerHTML = `
         <div class="card-header" style="padding: 12px;">
+            <div class="card-emoji-badge" style="font-size: 1.2rem; margin-right:6px;">${config.emoji}</div>
             <h3 style="font-size: 1.1rem;">${nome}</h3>
             <button class="fav-btn favorited" data-id="${bloco.id}">
                 <i class="fas fa-heart"></i>

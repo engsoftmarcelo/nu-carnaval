@@ -26,7 +26,6 @@ h1, h2, h3 {
     top: 0;
     left: 0;
     width: 100%;
-    /* Altura flexível para não cortar conteúdo em telas pequenas */
     height: auto; 
     min-height: var(--header-height);
     background-color: rgba(240, 240, 235, 0.95);
@@ -113,7 +112,6 @@ h1, h2, h3 {
 
 /* --- 3. Container Principal --- */
 #main-content {
-    /* Aumentado para 200px para garantir que o header nunca cubra o conteúdo */
     padding-top: 200px; 
     padding-bottom: 90px;
     padding-left: 16px;
@@ -193,23 +191,27 @@ h1, h2, h3 {
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
-/* --- 6. Card do Bloco --- */
+/* --- 6. Card do Bloco (BASE) --- */
 .bloco-card {
     background: var(--color-surface);
     border: var(--border-width) solid var(--color-asphalt);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-hard);
+    box-shadow: var(--shadow-hard); /* Será sobrescrito pela cor do público */
     display: flex;
     flex-direction: column;
     position: relative;
-    transition: all 0.1s;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     overflow: hidden;
     cursor: pointer;
 }
 
+.bloco-card:hover {
+    transform: translateY(-4px);
+}
+
 .bloco-card:active {
-    transform: translate(3px, 3px);
-    box-shadow: 1px 1px 0px var(--color-asphalt);
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px var(--color-asphalt) !important;
 }
 
 .card-header {
@@ -217,15 +219,31 @@ h1, h2, h3 {
     padding-bottom: 8px;
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center; 
     border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
 .card-header h3 {
     margin: 0;
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     color: var(--color-asphalt);
-    width: 85%;
+    flex: 1;
+    margin-left: 4px;
+}
+
+/* Badge de Emoji Flutuante */
+.card-emoji-badge {
+    font-size: 1.8rem;
+    line-height: 1;
+    margin-right: 8px;
+    filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.1));
+    animation: floatEmoji 3s ease-in-out infinite;
+    display: inline-block;
+}
+
+@keyframes floatEmoji {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px) rotate(5deg); }
 }
 
 .fav-btn {
@@ -239,7 +257,7 @@ h1, h2, h3 {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: -10px;
+    margin-top: -4px;
     margin-right: -10px;
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -850,7 +868,7 @@ h1, h2, h3 {
 .btn-social:hover .fa-instagram { color: #E1306C; }
 
 /* ==========================================================================
-   AVISO DE PROGRAMAÇÃO (Alerta de Pré-Carnaval)
+   AVISO DE PROGRAMAÇÃO
    ========================================================================== */
 .aviso-programacao {
     background-color: var(--color-cta); 
@@ -1173,57 +1191,70 @@ h1, h2, h3 {
 
 /* ==========================================================================
    PERSONALIZAÇÃO POR PÚBLICO-ALVO (Audience Styles)
+   Integração com ui.js: Emojis, Cores e Efeitos
    ========================================================================== */
 
-/* Cores por Categoria - Cores Vibrantes/Neon para bater com o tema */
-.aud-familia       { --aud-color: #00E676; } /* Verde Vivo */
-.aud-infantil      { --aud-color: #00B0FF; } /* Azul Celeste */
-.aud-universitario { --aud-color: #FF1744; } /* Vermelho Intenso */
-.aud-lgbt          { --aud-color: #D500F9; } /* Roxo Neon */
-.aud-mulheres      { --aud-color: #F50057; } /* Rosa Pink */
-.aud-cultural      { --aud-color: #FF6D00; } /* Laranja */
-.aud-terceira      { --aud-color: #009688; } /* Verde Azulado */
-.aud-jovem         { --aud-color: #C6FF00; } /* Lima Neon */
-.aud-torcedores    { --aud-color: #2979FF; } /* Azul Royal */
-.aud-social        { --aud-color: #3D5AFE; } /* Indigo */
-.aud-adulto        { --aud-color: #795548; } /* Marrom/Cobre */
-.aud-todos         { --aud-color: #FFD600; } /* Amarelo (Padrão) */
+/* 1. Definição das Cores por Categoria (Vibrantes/Neon) */
+.aud-infantil      { --aud-color: #00E5FF; --aud-bg: #E0F7FA; } /* Azul Ciano Vibrante */
+.aud-familia       { --aud-color: #00C853; --aud-bg: #E8F5E9; } /* Verde Forte */
+.aud-lgbt          { --aud-color: #D500F9; --aud-bg: #F3E5F5; } /* Roxo Neon */
+.aud-rock          { --aud-color: #212121; --aud-bg: #EEEEEE; } /* Preto Rock */
+.aud-universitario { --aud-color: #FF3D00; --aud-bg: #FFEBEE; } /* Laranja/Vermelho */
+.aud-cultural      { --aud-color: #FF6D00; --aud-bg: #FFF3E0; } /* Laranja Cultura */
+.aud-terceira      { --aud-color: #304FFE; --aud-bg: #E8EAF6; } /* Azul Índigo */
+.aud-religioso     { --aud-color: #00B0FF; --aud-bg: #E1F5FE; } /* Azul Céu */
+.aud-torcedores    { --aud-color: #FFD600; --aud-bg: #FFFDE7; } /* Amarelo */
+.aud-pet           { --aud-color: #795548; --aud-bg: #EFEBE9; } /* Marrom */
+.aud-mulheres      { --aud-color: #F50057; --aud-bg: #FCE4EC; } /* Rosa Pink */
+.aud-todos         { --aud-color: #6200EA; --aud-bg: #EDE7F6; } /* Roxo Padrão */
 
-/* Aplica a cor na sombra do Card (Efeito Neo-Brutalist Colorido) */
+/* 2. Aplica a cor na sombra do Card e Hover */
 .bloco-card[class*="aud-"] {
-    /* Mantém a borda preta, mas a sombra muda de cor */
     box-shadow: 6px 6px 0px var(--aud-color) !important;
-    transition: transform 0.1s, box-shadow 0.1s;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.bloco-card[class*="aud-"]:hover {
+    transform: translateY(-4px) translateX(-2px);
+    box-shadow: 10px 10px 0px var(--aud-color) !important;
 }
 
 .bloco-card[class*="aud-"]:active {
-    transform: translate(3px, 3px);
+    transform: translate(2px, 2px);
     box-shadow: 2px 2px 0px var(--aud-color) !important;
 }
 
-/* Etiqueta de Público dentro do Card */
+/* 3. Etiqueta de Público dentro do Card */
 .audience-tag {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     background-color: var(--aud-color);
-    color: #000; /* Texto sempre preto para contraste brutalista */
+    color: #FFF; /* Contraste padrão */
     font-family: var(--font-body);
     font-size: 0.75rem;
     font-weight: 800;
     text-transform: uppercase;
-    padding: 4px 8px;
+    padding: 4px 10px;
     border: 2px solid #000;
-    border-radius: 4px;
+    border-radius: 20px;
     margin-bottom: 8px;
     box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+}
+
+/* Ajuste de contraste para cores de fundo claras */
+.aud-torcedores .audience-tag,
+.aud-infantil .audience-tag,
+.aud-universitario .audience-tag,
+.aud-cultural .audience-tag {
+    color: #000;
 }
 
 .audience-tag i {
     font-size: 0.9rem;
 }
 
-/* Hero Section Turbinada */
+/* 4. Hero Section na Tela de Detalhes */
 .detalhe-hero {
     background-color: var(--color-surface);
     border: 2px solid var(--color-asphalt);
@@ -1235,12 +1266,6 @@ h1, h2, h3 {
     /* A Mágica: Sombra colorida baseada no público */
     box-shadow: 8px 8px 0px var(--aud-color);
     transition: box-shadow 0.3s ease;
-}
-
-@media (prefers-color-scheme: dark) {
-    .detalhe-hero {
-        border-color: #FFF;
-    }
 }
 
 .detalhe-header-top {
@@ -1262,23 +1287,8 @@ h1, h2, h3 {
     color: #000 !important; 
     border: 2px solid var(--color-asphalt);
     box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
-}
-
-.status-live-pill {
-    background-color: #FF0000;
-    color: #FFF;
-    font-weight: 800;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    animation: pulse 1s infinite;
-}
-
-.detalhe-subtitulo {
-    font-size: 1.1rem;
-    color: var(--color-text-light);
-    margin-bottom: 16px;
-    font-weight: 600;
+    /* Fundo da pill segue a cor do público agora */
+    background-color: var(--aud-color);
 }
 
 .detalhe-descricao {
@@ -1291,99 +1301,121 @@ h1, h2, h3 {
     color: var(--color-text);
 }
 
-.detalhe-grid-info {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin: 20px 0;
+/* 5. Personalização de Detalhes Internos */
+.detalhe-wrapper .detalhe-titulo {
+    color: var(--aud-color) !important;
 }
 
-.info-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: var(--color-bg);
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid rgba(0,0,0,0.1);
+/* Ícones e Bordas nos Utilitários */
+.detalhe-wrapper .utility-card h3,
+.detalhe-wrapper .utility-card h3 i {
+    color: var(--aud-color) !important;
 }
 
-.info-item i {
-    font-size: 1.5rem;
-    color: var(--aud-color); 
+.detalhe-wrapper .utility-card {
+    border: 2px solid var(--aud-color) !important;
+    box-shadow: 4px 4px 0px var(--aud-color) !important;
 }
 
-.info-item .label {
-    display: block;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    color: #666;
-    font-weight: 800;
-}
-.info-item .valor {
-    font-size: 1.1rem;
-    font-weight: 800;
-    color: var(--color-asphalt);
+.detalhe-wrapper .info-item i {
+    color: var(--aud-color) !important;
+    filter: drop-shadow(1px 1px 0px #000); 
 }
 
-.detalhe-clima {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    font-weight: 600;
-    font-size: 0.9rem;
+.detalhe-wrapper .info-item {
+    border: 1px solid var(--aud-color) !important;
 }
-.detalhe-clima.sol { background-color: #FFF8E1; color: #FF8F00; }
-.detalhe-clima.chuva { background-color: #E3F2FD; color: #1565C0; }
 
-.localizacao-box {
-    margin: 16px 0;
+/* Botão de Check-in Ativo */
+.detalhe-wrapper .btn-checkin.checked {
+    background-color: var(--aud-color) !important;
+    color: #000 !important;
+    border-color: #000 !important;
+    box-shadow: 4px 4px 0px #000 !important;
 }
-.loc-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.95rem;
-}
-.dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #000; }
-.dot.start { background: #00C853; }
-.dot.end { background: #FF2A00; }
-.loc-connector { width: 2px; height: 15px; background: #ccc; margin-left: 5px; }
 
-.mapa-preview {
-    height: 200px;
-    width: 100%;
-    border: 2px solid var(--color-asphalt);
-    border-radius: 8px;
-    background: #EEE;
+/* Efeito Especial para Card LGBT (Borda Arco-íris) */
+.bloco-card.aud-lgbt {
+    border: 2px solid transparent;
+    background-image: linear-gradient(var(--color-surface), var(--color-surface)), 
+                      linear-gradient(45deg, #FF0000, #FF7F00, #FFFF00, #00FF00, #0000FF, #8B00FF);
+    background-origin: border-box;
+    background-clip: content-box, border-box;
 }
+
+/* ==========================================================================
+   BOTÕES DE TRANSPORTE (MAPS, UBER, 99)
+   ========================================================================== */
 
 .botoes-mapa-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr; /* Duas colunas iguais */
     gap: 12px;
     margin-top: 16px;
 }
 
-.btn-uber {
+.btn-transport {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    background-color: #000;
-    color: #FFF !important;
-    font-weight: 700;
-    padding: 12px;
-    border-radius: 4px; /* Estilo Uber */
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: 800;
+    font-family: var(--font-body);
     text-decoration: none;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    transition: transform 0.1s, box-shadow 0.1s;
+    border: 2px solid #1A1A1A;
     box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
 }
 
+.btn-transport:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px rgba(0,0,0,0.2);
+}
+
+/* Botão Maps (Ocupa as 2 colunas se estiver sozinho, ou mantém grid) */
+.btn-maps {
+    /* Pode ocupar 2 colunas se necessário, definido inline no HTML quando preciso */
+    background-color: #FFF;
+    color: #1A1A1A;
+}
+
+/* Botão Uber */
+.btn-uber {
+    background-color: #000;
+    color: #FFF !important;
+}
+
+/* Botão 99 */
+.btn-99 {
+    background-color: #FFDE00; /* Amarelo 99 */
+    color: #1A1A1A !important;
+}
+
+/* Ícone estilizado do 99 (Texto simples simulando logo) */
+.icon-99 {
+    background: #000;
+    color: #FFDE00;
+    padding: 0px 4px;
+    border-radius: 4px;
+    font-weight: 900;
+    font-size: 0.8rem;
+    line-height: 1.2;
+}
+
+/* Ajuste no Preview do Mapa interno (se estiver visível) */
+.mapa-preview {
+    border: 2px solid #1A1A1A;
+    border-radius: 8px;
+    background: #EEE;
+    margin-bottom: 12px;
+}
+
 /* ==========================================================================
-   ANIMAÇÕES NEO-BRUTALISTAS (ADICIONADO)
+   ANIMAÇÕES NEO-BRUTALISTAS
    ========================================================================== */
 
 @keyframes tremelique {
@@ -1398,7 +1430,8 @@ h1, h2, h3 {
 .btn-small:hover, 
 .chip:hover, 
 .btn-emergency:hover,
-.btn-social:hover {
+.btn-social:hover,
+.btn-transport:hover {
     animation: tremelique 0.3s ease-in-out;
     cursor: pointer;
     box-shadow: 6px 6px 0px var(--color-cta) !important; 
@@ -1453,57 +1486,4 @@ h1, h2, h3 {
 
 .aviso-programacao:hover p {
     animation-play-state: paused;
-}
-
-/* ==========================================================================
-   PERSONALIZAÇÃO TOTAL POR PÚBLICO (FINAL DO ARQUIVO)
-   Força cores internas dos detalhes para seguir o público-alvo
-   ========================================================================== */
-
-/* 1. Título do Bloco com a cor do público */
-.detalhe-wrapper .detalhe-titulo {
-    color: var(--aud-color) !important;
-}
-
-/* 2. Botão "Abrir GPS" assume a cor do público */
-.detalhe-wrapper .detalhe-mapa-btn {
-    background-color: var(--aud-color) !important;
-    color: #000 !important; /* Mantém texto preto para contraste brutalista */
-    border-color: #1A1A1A !important;
-    box-shadow: 4px 4px 0px #1A1A1A !important;
-}
-
-/* 3. Títulos das seções internas (Onde é o trem?, Vibe Check) */
-.detalhe-wrapper .utility-card h3 {
-    color: var(--aud-color) !important;
-}
-
-/* 4. Ícones dos títulos das seções */
-.detalhe-wrapper .utility-card h3 i {
-    color: var(--aud-color) !important;
-}
-
-/* 5. Bordas e Sombra dos Cards Utilitários */
-.detalhe-wrapper .utility-card {
-    border: 2px solid var(--aud-color) !important;
-    box-shadow: 4px 4px 0px var(--aud-color) !important;
-}
-
-/* 6. Ícones de Data e Hora */
-.detalhe-wrapper .info-item i {
-    color: var(--aud-color) !important;
-    filter: drop-shadow(1px 1px 0px #000); 
-}
-
-/* 7. Borda dos itens de info */
-.detalhe-wrapper .info-item {
-    border: 1px solid var(--aud-color) !important;
-}
-
-/* 8. Botão de Check-in quando marcado (Fui e sobrevivi) */
-.detalhe-wrapper .btn-checkin.checked {
-    background-color: var(--aud-color) !important;
-    color: #000 !important;
-    border-color: #000 !important;
-    box-shadow: 4px 4px 0px #000 !important;
 }
