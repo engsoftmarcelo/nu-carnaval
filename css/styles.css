@@ -196,7 +196,7 @@ h1, h2, h3 {
     background: var(--color-surface);
     border: var(--border-width) solid var(--color-asphalt);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-hard); /* Será sobrescrito pela cor do público */
+    box-shadow: var(--shadow-hard); /* Será sobrescrito pela cor da região */
     display: flex;
     flex-direction: column;
     position: relative;
@@ -1190,68 +1190,41 @@ h1, h2, h3 {
 }
 
 /* ==========================================================================
-   PERSONALIZAÇÃO POR PÚBLICO-ALVO (Audience Styles)
-   Integração com ui.js: Emojis, Cores e Efeitos
+   PERSONALIZAÇÃO POR REGIÃO (Substitui Audience Styles)
+   Integração com ui.js: Cores por Bairros de BH
    ========================================================================== */
 
-/* 1. Definição das Cores por Categoria (Vibrantes/Neon) */
-.aud-infantil      { --aud-color: #00E5FF; --aud-bg: #E0F7FA; } /* Azul Ciano Vibrante */
-.aud-familia       { --aud-color: #00C853; --aud-bg: #E8F5E9; } /* Verde Forte */
-.aud-lgbt          { --aud-color: #D500F9; --aud-bg: #F3E5F5; } /* Roxo Neon */
-.aud-rock          { --aud-color: #212121; --aud-bg: #EEEEEE; } /* Preto Rock */
-.aud-universitario { --aud-color: #FF3D00; --aud-bg: #FFEBEE; } /* Laranja/Vermelho */
-.aud-cultural      { --aud-color: #FF6D00; --aud-bg: #FFF3E0; } /* Laranja Cultura */
-.aud-terceira      { --aud-color: #304FFE; --aud-bg: #E8EAF6; } /* Azul Índigo */
-.aud-religioso     { --aud-color: #00B0FF; --aud-bg: #E1F5FE; } /* Azul Céu */
-.aud-torcedores    { --aud-color: #FFD600; --aud-bg: #FFFDE7; } /* Amarelo */
-.aud-pet           { --aud-color: #795548; --aud-bg: #EFEBE9; } /* Marrom */
-.aud-mulheres      { --aud-color: #F50057; --aud-bg: #FCE4EC; } /* Rosa Pink */
-.aud-todos         { --aud-color: #6200EA; --aud-bg: #EDE7F6; } /* Roxo Padrão */
+/* 1. Definição das Cores por Região (Vibrantes) */
+.reg-sul      { --aud-color: #E91E63; --aud-bg: #FCE4EC; } /* Rosa (Nobres/Savassi) */
+.reg-centro   { --aud-color: #FF2A00; --aud-bg: #FFEBEE; } /* Laranja (Central) */
+.reg-leste    { --aud-color: #9C27B0; --aud-bg: #F3E5F5; } /* Roxo (Santa Tereza) */
+.reg-pampulha { --aud-color: #00B0FF; --aud-bg: #E1F5FE; } /* Azul (Pampulha) */
+.reg-barreiro { --aud-color: #D50000; --aud-bg: #FFEBEE; } /* Vermelho (Barreiro) */
+.reg-norte    { --aud-color: #FF9100; --aud-bg: #FFF3E0; } /* Amarelo Escuro (Norte) */
+.reg-oeste    { --aud-color: #FFC107; --aud-bg: #FFFDE7; } /* Amarelo (Oeste) */
+.reg-geral    { --aud-color: #666666; --aud-bg: #EEEEEE; } /* Cinza (Default) */
 
 /* 2. Aplica a cor na sombra do Card e Hover */
-.bloco-card[class*="aud-"] {
+/* O seletor agora busca por 'reg-' em vez de 'aud-' */
+.bloco-card[class*="reg-"] {
     box-shadow: 6px 6px 0px var(--aud-color) !important;
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.bloco-card[class*="aud-"]:hover {
+.bloco-card[class*="reg-"]:hover {
     transform: translateY(-4px) translateX(-2px);
     box-shadow: 10px 10px 0px var(--aud-color) !important;
 }
 
-.bloco-card[class*="aud-"]:active {
+.bloco-card[class*="reg-"]:active {
     transform: translate(2px, 2px);
     box-shadow: 2px 2px 0px var(--aud-color) !important;
 }
 
-/* 3. Etiqueta de Público dentro do Card */
+/* 3. Etiqueta de Público removida visualmente (mas mantemos estilo base caso volte) */
 .audience-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background-color: var(--aud-color);
-    color: #FFF; /* Contraste padrão */
-    font-family: var(--font-body);
-    font-size: 0.75rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    padding: 4px 10px;
-    border: 2px solid #000;
-    border-radius: 20px;
-    margin-bottom: 8px;
-    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
-}
-
-/* Ajuste de contraste para cores de fundo claras */
-.aud-torcedores .audience-tag,
-.aud-infantil .audience-tag,
-.aud-universitario .audience-tag,
-.aud-cultural .audience-tag {
-    color: #000;
-}
-
-.audience-tag i {
-    font-size: 0.9rem;
+    /* Desativado pois removemos do HTML */
+    display: none; 
 }
 
 /* 4. Hero Section na Tela de Detalhes */
@@ -1263,7 +1236,7 @@ h1, h2, h3 {
     margin-bottom: 24px;
     position: relative;
     overflow: hidden;
-    /* A Mágica: Sombra colorida baseada no público */
+    /* A Mágica: Sombra colorida baseada na região */
     box-shadow: 8px 8px 0px var(--aud-color);
     transition: box-shadow 0.3s ease;
 }
@@ -1275,6 +1248,7 @@ h1, h2, h3 {
     margin-bottom: 16px;
 }
 
+/* Pill agora usada para mostrar o Bairro/Região */
 .audience-pill {
     display: inline-flex;
     align-items: center;
@@ -1284,10 +1258,9 @@ h1, h2, h3 {
     font-size: 0.85rem;
     font-weight: 800;
     text-transform: uppercase;
-    color: #000 !important; 
+    color: #FFF !important; /* Texto branco para contraste com cores fortes */
     border: 2px solid var(--color-asphalt);
     box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
-    /* Fundo da pill segue a cor do público agora */
     background-color: var(--aud-color);
 }
 
@@ -1332,15 +1305,6 @@ h1, h2, h3 {
     color: #000 !important;
     border-color: #000 !important;
     box-shadow: 4px 4px 0px #000 !important;
-}
-
-/* Efeito Especial para Card LGBT (Borda Arco-íris) */
-.bloco-card.aud-lgbt {
-    border: 2px solid transparent;
-    background-image: linear-gradient(var(--color-surface), var(--color-surface)), 
-                      linear-gradient(45deg, #FF0000, #FF7F00, #FFFF00, #00FF00, #0000FF, #8B00FF);
-    background-origin: border-box;
-    background-clip: content-box, border-box;
 }
 
 /* ==========================================================================

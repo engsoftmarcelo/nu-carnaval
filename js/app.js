@@ -5,7 +5,6 @@
    ========================================================================== */
 
 import { carregarDados } from './data.js';
-// ADICIONADO: renderDestaques na importação
 import { renderBlocos, mudarVisualizacao, atualizarBotaoFavorito, renderTimeline, renderStats, mostrarDetalhes, renderPoster, renderDestaques } from './ui.js';
 import { initMap, atualizarMarcadores, focarCategoriaNoMapa } from './map.js';
 import { getFavoritos, toggleFavorito, importarFavoritos, toggleCheckin, getCheckinCount } from './storage.js';
@@ -65,7 +64,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 1. Carrega e corrige os dados
         appState.todosBlocos = await carregarDados();
-        appState.blocosFiltrados = [...appState.todosBlocos];
+        
+        // --- ALTERAÇÃO (Pedido 2): Filtra inicial para mostrar apenas blocos de hoje ou futuros ---
+        const hoje = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
+        
+        // Ordena para garantir que os de hoje apareçam primeiro
+        appState.blocosFiltrados = appState.todosBlocos
+            .filter(b => b.date >= hoje)
+            .sort((a, b) => {
+                if (a.date === b.date) return a.time.localeCompare(b.time);
+                return a.date.localeCompare(b.date);
+            });
+
+        // Fallback: Se não houver blocos futuros (ex: fim do carnaval), carrega tudo para não ficar vazio
+        if (appState.blocosFiltrados.length === 0) {
+            appState.blocosFiltrados = [...appState.todosBlocos];
+        }
         
         // --- PONTE PARA O MAPA ---
         // Cria a função global para abrir detalhes (caso ainda usado em popups de utilidade)
@@ -80,11 +94,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 3. Inicializa o Mapa (Passando os dados para o cache do mapa)
         initMap(appState.todosBlocos); 
 
-        // --- NOVO: Renderiza os Destaques (Artistas) no topo da lista ---
+        // --- Renderiza os Destaques (Artistas) no topo da lista ---
         renderDestaques(appState.todosBlocos);
 
-        // 4. Renderiza a lista inicial
-        aplicarFiltros();
+        // 4. Renderiza a lista inicial (OBS: Não chamamos aplicarFiltros() aqui para manter o filtro de data inicial)
+        renderBlocos(appState.blocosFiltrados, 'lista-blocos');
 
         // 5. Reagendar notificações dos favoritos existentes
         const favoritosSalvos = getFavoritos();
@@ -135,7 +149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // --- Configuração dos Eventos Gerais ---
 function setupEventListeners() {
     
-    // 0. NOVO: Escuta o evento de clique no bairro (Vindo do map.js)
+    // 0. Escuta o evento de clique no bairro (Vindo do map.js)
     window.addEventListener('bairroSelecionado', (e) => {
         const { bairro, blocos } = e.detail;
 

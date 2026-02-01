@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - COMPLETO E CORRIGIDO (Scroll Infinito + Drag Mouse)
+   Camada de Interface - ATUALIZADO (Regiões, Sem Público, Fix Botões)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn, toggleFavorito } from './storage.js';
@@ -12,53 +12,36 @@ let unsubscribeVibe = null;
 
 // --- FUNÇÕES AUXILIARES DE ESTILO E LÓGICA ---
 
-function getAudienceConfig(publico) {
-    if (!publico) return { css: 'aud-todos', icon: 'fas fa-globe-americas', emoji: '🎉' };
+// ALTERAÇÃO (Pedido 4): Nova lógica de Cores por Região
+function getRegionConfig(bairro) {
+    if (!bairro) return { css: 'reg-centro', icon: 'fas fa-map-marker-alt', color: '#FF2A00' };
 
-    const normalize = (str) => str.toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim();
+    const b = bairro.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-    const chave = normalize(publico);
-
-    const mapa = {
-        'infantil':      { css: 'aud-infantil',      icon: 'fas fa-child',          emoji: '🎈' },
-        'crianca':       { css: 'aud-infantil',      icon: 'fas fa-shapes',         emoji: '🍭' },
-        'familia':       { css: 'aud-familia',       icon: 'fas fa-users',          emoji: '👨‍👩‍👧‍👦' },
-        'lgbt':          { css: 'aud-lgbt',          icon: 'fas fa-rainbow',        emoji: '🏳️‍🌈' },
-        'gay':           { css: 'aud-lgbt',          icon: 'fas fa-transgender',    emoji: '🦄' },
-        'afro':          { css: 'aud-cultural',      icon: 'fas fa-drum',           emoji: '✊🏿' },
-        'cultural':      { css: 'aud-cultural',      icon: 'fas fa-theater-masks',  emoji: '🎭' },
-        'rock':          { css: 'aud-rock',          icon: 'fas fa-hand-rock',      emoji: '🤘' },
-        'alternativo':   { css: 'aud-rock',          icon: 'fas fa-guitar',         emoji: '🎸' },
-        'universitario': { css: 'aud-universitario', icon: 'fas fa-graduation-cap', emoji: '🍻' },
-        'jovem':         { css: 'aud-jovem',         icon: 'fas fa-bolt',           emoji: '⚡' },
-        'terceira':      { css: 'aud-terceira',      icon: 'fas fa-heart',          emoji: '💃' },
-        'idoso':         { css: 'aud-terceira',      icon: 'fas fa-star',           emoji: '🌟' },
-        'religioso':     { css: 'aud-religioso',     icon: 'fas fa-praying-hands',  emoji: '🙌' },
-        'torcida':       { css: 'aud-torcedores',    icon: 'fas fa-futbol',         emoji: '⚽' },
-        'pet':           { css: 'aud-pet',           icon: 'fas fa-paw',            emoji: '🐶' },
-        'mulheres':      { css: 'aud-mulheres',      icon: 'fas fa-venus',          emoji: '💄' },
-        'adulto':        { css: 'aud-adulto',        icon: 'fas fa-wine-glass-alt', emoji: '🍸' },
-        'geral':         { css: 'aud-todos',         icon: 'fas fa-globe-americas', emoji: '🎉' }
-    };
-
-    if (mapa[chave]) return mapa[chave];
+    // Mapa de Regiões de BH (Simplificado)
+    if (b.includes('savassi') || b.includes('funcionarios') || b.includes('lurdes') || b.includes('sion') || b.includes('belvedere')) 
+        return { css: 'reg-sul', icon: 'fas fa-martini-glass-citrus', color: '#E91E63' }; // Rosa/Nobres
     
-    for (const [key, val] of Object.entries(mapa)) {
-        if (chave.includes(key)) return val;
-    }
+    if (b.includes('centro') || b.includes('floresta') || b.includes('barro preto')) 
+        return { css: 'reg-centro', icon: 'fas fa-building', color: '#FF2A00' }; // Laranja/Vermelho
+    
+    if (b.includes('tereza') || b.includes('santa efigenia') || b.includes('horto') || b.includes('pompeia')) 
+        return { css: 'reg-leste', icon: 'fas fa-guitar', color: '#9C27B0' }; // Roxo/Boêmio
 
-    return { css: 'aud-todos', icon: 'fas fa-bullhorn', emoji: '🎊' };
-}
+    if (b.includes('pampulha') || b.includes('jaragua') || b.includes('liberdade') || b.includes('ouro preto')) 
+        return { css: 'reg-pampulha', icon: 'fas fa-water', color: '#00B0FF' }; // Azul
 
-function getPublicoDoBloco(bloco) {
-    return bloco.audience || 
-           bloco['Público-Alvo Principal'] || 
-           bloco['Público-Alvo'] || 
-           bloco['publico'] || 
-           'Geral';
+    if (b.includes('barreiro')) 
+        return { css: 'reg-barreiro', icon: 'fas fa-industry', color: '#D50000' }; // Vermelho Escuro
+        
+    if (b.includes('norte') || b.includes('venda nova') || b.includes('planalto')) 
+        return { css: 'reg-norte', icon: 'fas fa-road', color: '#FF9100' }; // Amarelo/Laranja
+
+    if (b.includes('oeste') || b.includes('prado') || b.includes('gutierrez'))
+        return { css: 'reg-oeste', icon: 'fas fa-sun', color: '#FFC107' }; // Amarelo
+
+    // Default
+    return { css: 'reg-geral', icon: 'fas fa-map-pin', color: '#666666' };
 }
 
 function getCountdownHTML(dataStr, horaStr) {
@@ -85,12 +68,11 @@ function getCountdownHTML(dataStr, horaStr) {
     return '<div class="hype-counter" style="background:#FF2A00; color:#FFF;">🚀 PREPARA! É JÁ JÁ!</div>';
 }
 
-// --- CARROSSEL DE DESTAQUES (CORRIGIDO: DRAG & LOOP) ---
+// --- CARROSSEL DE DESTAQUES ---
 export function renderDestaques(todosBlocos) {
     const container = document.getElementById('carousel-destaques');
     if (!container) return;
 
-    // Filtra blocos especiais com imagem
     const destaquesOriginais = todosBlocos.filter(b => 
         (b.is_special === true || b.is_special === "true") && b.artist_image
     );
@@ -100,7 +82,6 @@ export function renderDestaques(todosBlocos) {
         return;
     }
 
-    // DUPLICAR A LISTA: Garante itens suficientes para o scroll infinito
     let listaFinal = [...destaquesOriginais];
     while (listaFinal.length < 10) { 
         listaFinal = [...listaFinal, ...destaquesOriginais];
@@ -112,17 +93,15 @@ export function renderDestaques(todosBlocos) {
     const wrapper = document.createElement('div');
     wrapper.className = 'destaques-wrapper';
     
-    // Configurações para scroll manual suave
     wrapper.style.scrollBehavior = 'auto'; 
     wrapper.style.overflowX = 'auto'; 
-    wrapper.style.cursor = 'grab'; // Indica que é arrastável
-    wrapper.style.scrollbarWidth = 'none'; // Firefox
-    wrapper.style.msOverflowStyle = 'none'; // IE/Edge
+    wrapper.style.cursor = 'grab'; 
+    wrapper.style.scrollbarWidth = 'none'; 
+    wrapper.style.msOverflowStyle = 'none'; 
 
     listaFinal.forEach(bloco => {
         const card = document.createElement('div');
         card.className = 'destaque-card';
-        // Previne clique acidental ao arrastar
         card.onclick = (e) => {
             if (wrapper.classList.contains('dragging')) {
                 e.preventDefault();
@@ -131,7 +110,6 @@ export function renderDestaques(todosBlocos) {
             }
             mostrarDetalhes(bloco);
         };
-        // Previne arrastar a imagem fantasma
         card.ondragstart = (e) => e.preventDefault();
 
         const data = bloco.date || bloco['Data'];
@@ -159,45 +137,32 @@ export function renderDestaques(todosBlocos) {
 
     container.appendChild(wrapper);
 
-    // --- LÓGICA DE ANIMAÇÃO E INTERAÇÃO ---
+    // Animação do carrossel
     let isPaused = false;
     let scrollPos = 0;
     const speed = 0.8; 
-    
-    // Variáveis para Drag com Mouse (Desktop)
     let isDown = false;
     let startX;
     let scrollLeftStart;
-
-    // Cálculo da largura: Card (280px) + Gap (16px) = 296px
     const itemWidth = 296; 
     const resetPoint = destaquesOriginais.length * itemWidth;
 
     function animateScroll() {
         if (!wrapper) return;
-
-        // Se o scroll passou do ponto de reset, volta magicamente para o início (loop)
-        // Fazemos isso independente de estar pausado ou não para garantir integridade
         if (wrapper.scrollLeft >= resetPoint) {
-            // Subtrai exatamente o resetPoint para não dar salto visual
             const diff = wrapper.scrollLeft - resetPoint;
             wrapper.scrollLeft = diff;
             scrollPos = diff;
         }
-
         if (!isPaused && !isDown) {
             scrollPos += speed;
             wrapper.scrollLeft = scrollPos;
         } else {
-            // Se está pausado (mouse em cima ou tocando), atualizamos a posição
-            // para que ao soltar ele continue de onde parou, sem pular
             scrollPos = wrapper.scrollLeft;
         }
-        
         requestAnimationFrame(animateScroll);
     }
 
-    // --- Eventos de Mouse (Desktop Drag) ---
     wrapper.addEventListener('mousedown', (e) => {
         isDown = true;
         isPaused = true;
@@ -205,8 +170,6 @@ export function renderDestaques(todosBlocos) {
         wrapper.style.cursor = 'grabbing';
         startX = e.pageX - wrapper.offsetLeft;
         scrollLeftStart = wrapper.scrollLeft;
-        
-        // Remove flag de "arrastando" para permitir clique se for rápido
         setTimeout(() => wrapper.classList.remove('dragging'), 100);
     });
 
@@ -221,9 +184,7 @@ export function renderDestaques(todosBlocos) {
         isDown = false;
         wrapper.style.cursor = 'grab';
         wrapper.classList.remove('active');
-        // Pequeno delay para voltar a animar
         setTimeout(() => isPaused = false, 1000);
-        // Remove a flag de dragging logo após soltar
         setTimeout(() => wrapper.classList.remove('dragging'), 50);
     });
 
@@ -231,21 +192,16 @@ export function renderDestaques(todosBlocos) {
         if (!isDown) return;
         e.preventDefault();
         const x = e.pageX - wrapper.offsetLeft;
-        const walk = (x - startX) * 1.5; // Velocidade do arrasto
+        const walk = (x - startX) * 1.5;
         wrapper.scrollLeft = scrollLeftStart - walk;
-        
-        // Se moveu mais que 5 pixels, considera que está arrastando (bloqueia clique)
         if (Math.abs(walk) > 5) {
             wrapper.classList.add('dragging');
         }
     });
 
-    // --- Eventos de Touch (Mobile) ---
-    // Mobile já tem scroll nativo com overflow-x: auto, só precisamos pausar
     wrapper.addEventListener('touchstart', () => isPaused = true, { passive: true });
     wrapper.addEventListener('touchend', () => setTimeout(() => isPaused = false, 1000));
 
-    // Inicia o loop
     requestAnimationFrame(animateScroll);
 }
 
@@ -270,10 +226,13 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
     listaBlocos.forEach(bloco => {
         const article = document.createElement('article');
         
-        const publicoTexto = getPublicoDoBloco(bloco);
-        const config = getAudienceConfig(publicoTexto);
+        // ALTERAÇÃO (Pedido 4): Personalização por Região
+        const bairro = bloco.neighborhood || bloco['bairro'] || "Belo Horizonte";
+        const regConfig = getRegionConfig(bairro);
         
-        article.className = `bloco-card ${config.css}`;
+        // Removemos classes antigas de audiência e usamos a da região
+        article.className = `bloco-card ${regConfig.css}`;
+        article.style.borderLeft = `5px solid ${regConfig.color}`; 
         
         article.onclick = (e) => {
             if (e.target.closest('.fav-btn')) return;
@@ -287,25 +246,20 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
         const estilos = Array.isArray(bloco.musical_style) ? bloco.musical_style : (bloco['Estilo Musical'] ? [bloco['Estilo Musical']] : []);
         const estilosTags = estilos.map(style => `<span class="tag">${style}</span>`).join(' ');
         
-        const bairro = bloco.neighborhood || bloco['bairro'] || "Belo Horizonte";
-
+        // ALTERAÇÃO (Pedido 3): Removido "Geral" e ícones de público
         article.innerHTML = `
             <div class="card-header">
-                <div class="card-emoji-badge">${config.emoji}</div>
+                <div class="card-emoji-badge"><i class="${regConfig.icon}" style="color:${regConfig.color}"></i></div>
                 <h3>${bloco.name || bloco['Nome do Bloco']}</h3>
                 <button class="fav-btn ${favoritoClass}" data-id="${bloco.id}">
                     <i class="${iconHeart}"></i>
                 </button>
             </div>
             <div class="card-body">
-                <div class="audience-tag">
-                    <i class="${config.icon}"></i>
-                    <span>${publicoTexto}</span>
-                </div>
                 ${statusHTML}
                 <div class="card-info weather-placeholder" id="weather-${bloco.id}"></div>
                 <div class="card-info" style="color: var(--color-text); opacity: 0.9;">
-                    <i class="fas fa-map-marker-alt" style="color: var(--aud-color);"></i>
+                    <i class="fas fa-map-marker-alt" style="color: ${regConfig.color};"></i>
                     <span>${bairro}</span>
                 </div>
                 <div class="card-tags">${estilosTags}</div>
@@ -355,68 +309,73 @@ export async function mostrarDetalhes(bloco) {
 
     const container = document.getElementById('detalhes-conteudo');
     
-    // 1. Configurações Visuais
-    const publicoTexto = getPublicoDoBloco(bloco);
-    const audConfig = getAudienceConfig(publicoTexto);
+    // Configurações Visuais
+    const bairro = bloco.neighborhood || bloco['bairro'] || "Belo Horizonte";
+    const regConfig = getRegionConfig(bairro); // Usa região agora
     const estilosMusicais = Array.isArray(bloco.musical_style) ? bloco.musical_style.join(' • ') : (bloco['Estilo Musical'] || 'Diversos');
 
-    // 2. Lógica do Header (Botão Favorito)
+    // ALTERAÇÃO (Pedido 5): Correção do botão Salvar
     const btnFavHeader = document.getElementById('btn-fav-detalhe');
     if (btnFavHeader) {
-        const updateFavState = () => {
+        // Clone para limpar eventos anteriores
+        const novoBotao = btnFavHeader.cloneNode(true);
+        btnFavHeader.parentNode.replaceChild(novoBotao, btnFavHeader);
+
+        const updateFavVisual = () => {
             const isFav = isFavorito(bloco.id);
             if(isFav) {
-                btnFavHeader.classList.add('favorited');
-                btnFavHeader.innerHTML = '<i class="fas fa-heart"></i>';
+                novoBotao.classList.add('favorited');
+                novoBotao.innerHTML = '<i class="fas fa-heart"></i>';
             } else {
-                btnFavHeader.classList.remove('favorited');
-                btnFavHeader.innerHTML = '<i class="far fa-heart"></i>';
+                novoBotao.classList.remove('favorited');
+                novoBotao.innerHTML = '<i class="far fa-heart"></i>';
             }
         };
-        updateFavState();
         
-        // Clone para limpar eventos anteriores
-        const newBtnFav = btnFavHeader.cloneNode(true);
-        btnFavHeader.parentNode.replaceChild(newBtnFav, btnFavHeader);
+        // Inicializa estado visual
+        updateFavVisual();
         
-        newBtnFav.addEventListener('click', () => {
+        // Adiciona evento com stopPropagation para garantir clique
+        novoBotao.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             toggleFavorito(bloco.id);
-            updateFavState();
+            updateFavVisual();
             if(navigator.vibrate) navigator.vibrate(50);
+            
+            // Sincroniza botão da lista se existir
+            const btnList = document.querySelector(`.fav-btn[data-id="${bloco.id}"]`);
+            if(btnList) atualizarBotaoFavorito(btnList, isFavorito(bloco.id));
         });
     }
 
-    // 3. Dados do Bloco
+    // Dados do Bloco
     const nome = bloco.name || bloco['Nome do Bloco'];
-    const bairro = bloco.neighborhood || bloco['bairro'] || 'Belo Horizonte';
     const local = bloco.location || bloco['Local de Concentração'] || 'Local a definir';
     const horario = bloco.time || bloco['Horário'];
     const dataOriginal = bloco.date || bloco['Data'];
     const dataExibicao = dataOriginal.split('-').reverse().join('/'); // Ex: 15/02/2026
-    
-    // Pega apenas "15/02" para o visual do ticket
     const diaMesTicket = dataExibicao.substring(0, 5); 
     const descricao = bloco.description || bloco['descrisao'] || '';
 
-    // 4. Countdown
+    // Countdown
     const countdownHTML = getCountdownHTML(dataOriginal, horario);
 
-    // 5. LÓGICA DE TRANSPORTE
+    // Transporte
     const enderecoBusca = encodeURIComponent(`${local}, ${bairro}, Belo Horizonte, MG`);
     const apelidoLocal = encodeURIComponent(nome);
-
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${enderecoBusca}`;
     const uberUrl = `https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]=${enderecoBusca}&dropoff[nickname]=${apelidoLocal}`;
     const url99 = `https://d.99app.com/`; 
 
-    // 6. Renderização HTML
+    // Renderização HTML
     container.innerHTML = `
-        <div class="detalhe-wrapper ${audConfig.css}">
+        <div class="detalhe-wrapper ${regConfig.css}" style="border-top: 5px solid ${regConfig.color};">
             
             <div class="detalhe-hero">
                 <div class="detalhe-header-top">
-                    <span class="audience-pill" style="background-color: var(--aud-color);">
-                        <i class="${audConfig.icon}"></i> ${publicoTexto}
+                    <span class="audience-pill" style="background-color: ${regConfig.color}; color: white;">
+                        <i class="${regConfig.icon}"></i> ${bairro}
                     </span>
                     ${getStatusPill(bloco)}
                 </div>
@@ -454,7 +413,7 @@ export async function mostrarDetalhes(bloco) {
                 
                 <div class="card-local-texto">
                     <h4 style="margin-bottom:4px; color:#1A1A1A; font-size:1.1rem;">${local}</h4>
-                    <p style="color:#666; font-weight:bold;">${bairro}</p>
+                    <p style="color:${regConfig.color}; font-weight:bold;">${bairro}</p>
                 </div>
 
                 <p style="font-size:0.9rem; color:#888; margin-bottom:12px; text-align:center;">
@@ -496,10 +455,10 @@ export async function mostrarDetalhes(bloco) {
             <div style="height: 100px;"></div>
         </div>`;
 
-    // 7. Transição
+    // Transição
     mudarVisualizacao('view-detalhes');
 
-    // 8. Pós-Render
+    // Pós-Render
     requestAnimationFrame(() => {
         // Renderiza Clima
         if (bloco.lat && bloco.lng) {
@@ -592,6 +551,11 @@ export function mudarVisualizacao(viewId) {
     const bottomNav = document.querySelector('.bottom-nav');
     const mainContent = document.getElementById('main-content');
 
+    // ALTERAÇÃO (Pedido 6): Controle de visibilidade dos filtros
+    const searchContainer = document.querySelector('.search-container');
+    const filterToggle = document.getElementById('filter-toggle');
+    const filtersPanel = document.getElementById('filters-panel');
+
     if (viewId === 'view-detalhes') {
         appHeader.style.display = 'none';
         bottomNav.style.display = 'none';
@@ -600,6 +564,16 @@ export function mudarVisualizacao(viewId) {
         appHeader.style.display = 'flex';
         bottomNav.style.display = 'flex';
         mainContent.style.paddingTop = ''; 
+        
+        // Só mostra busca e filtros se estiver na view Explorar
+        if (viewId === 'view-explorar') {
+            if (searchContainer) searchContainer.style.display = 'block'; 
+            if (filterToggle) filterToggle.style.display = 'block';
+        } else {
+            if (searchContainer) searchContainer.style.display = 'none';
+            if (filterToggle) filterToggle.style.display = 'none';
+            if (filtersPanel) filtersPanel.style.display = 'none'; // Fecha o painel
+        }
     }
 
     const target = document.getElementById(viewId);
@@ -611,22 +585,6 @@ export function mudarVisualizacao(viewId) {
 
     if (viewId === 'view-guia') {
         renderBotaoNotificacao();
-    }
-
-    const searchContainer = document.querySelector('.search-container');
-    const filterChips = document.querySelector('.filter-chips');
-    const filterToggle = document.getElementById('filter-toggle');
-
-    if (searchContainer) {
-        if (viewId === 'view-guia') {
-            searchContainer.style.display = 'none';
-            if (filterChips) filterChips.style.display = 'none';
-            if (filterToggle) filterToggle.style.display = 'none';
-        } else {
-            searchContainer.style.display = 'block';
-            if (filterChips) filterChips.style.display = 'flex';
-            if (filterToggle) filterToggle.style.display = 'block';
-        }
     }
 }
 
@@ -641,33 +599,6 @@ export function atualizarBotaoFavorito(btnElement, isFav) {
         icon.classList.remove('fas');
         icon.classList.add('far');
     }
-}
-
-export function renderCategorias(categorias, onClick) {
-    const container = document.querySelector('.filter-chips');
-    if (!container) return;
-    container.innerHTML = '';
-
-    const fixos = [{ id: 'todos', label: 'Todos' }, { id: 'hoje', label: 'Hoje' }];
-    const listaFinal = [...fixos];
-    
-    categorias.sort().forEach(cat => {
-        if(cat && cat.length > 1) listaFinal.push({ id: cat.toLowerCase(), label: cat });
-    });
-
-    listaFinal.forEach(item => {
-        const btn = document.createElement('button');
-        btn.className = 'chip';
-        if (item.id === 'todos') btn.classList.add('active');
-        btn.dataset.filter = item.id;
-        btn.textContent = item.label;
-        btn.onclick = () => {
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            onClick(item.id);
-        };
-        container.appendChild(btn);
-    });
 }
 
 function getStatusHTML(bloco) {
@@ -773,10 +704,11 @@ export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
 
 function criarCardTimeline(bloco) {
     const article = document.createElement('article');
-    const publicoTexto = getPublicoDoBloco(bloco);
-    const config = getAudienceConfig(publicoTexto);
+    // Usa Região na timeline também
+    const bairro = bloco.neighborhood || bloco['bairro'] || "Belo Horizonte";
+    const regConfig = getRegionConfig(bairro);
     
-    article.className = `bloco-card ${config.css}`;
+    article.className = `bloco-card ${regConfig.css}`;
     article.onclick = (e) => {
         if (e.target.closest('.fav-btn')) return;
         mostrarDetalhes(bloco); 
@@ -784,11 +716,10 @@ function criarCardTimeline(bloco) {
 
     const nome = bloco.name || bloco['Nome do Bloco'];
     const hora = bloco.time || bloco['Horário'];
-    const bairro = bloco.neighborhood || bloco['bairro'] || 'BH';
 
     article.innerHTML = `
         <div class="card-header" style="padding: 12px;">
-            <div class="card-emoji-badge" style="font-size: 1.2rem; margin-right:6px;">${config.emoji}</div>
+            <div class="card-emoji-badge" style="font-size: 1.2rem; margin-right:6px;"><i class="${regConfig.icon}" style="color:${regConfig.color}"></i></div>
             <h3 style="font-size: 1.1rem;">${nome}</h3>
             <button class="fav-btn favorited" data-id="${bloco.id}">
                 <i class="fas fa-heart"></i>
