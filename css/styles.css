@@ -1726,3 +1726,150 @@ h1, h2, h3 {
 .destaque-card:nth-child(2) { animation-delay: 0.2s; }
 .destaque-card:nth-child(3) { animation-delay: 0.3s; }
 .destaque-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* ==========================================================================
+   ATUALIZAÇÃO EM: css/styles.css
+   ========================================================================== */
+
+/* 1. Reset e Melhoria de Cards */
+.cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); /* Responsivo */
+    gap: 24px;
+    padding-bottom: 40px;
+}
+
+.bloco-card {
+    background: #FFFFFF;
+    border: 2px solid #1A1A1A; /* Borda grossa estilo cartoon */
+    border-radius: 12px;
+    box-shadow: 6px 6px 0px rgba(0,0,0,0.9); /* Sombra dura */
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+.bloco-card:active {
+    transform: translate(4px, 4px);
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.9);
+}
+
+/* 2. Cabeçalho do Card */
+.card-header {
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: #FAFAFA;
+    border-bottom: 2px solid #1A1A1A;
+}
+
+.header-main {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 85%;
+}
+
+.card-header h3 {
+    font-family: 'Anton', sans-serif;
+    font-size: 1.4rem;
+    line-height: 1.1;
+    color: #1A1A1A;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+/* Badge de Turno */
+.turno-badge {
+    align-self: flex-start;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 4px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Botão Favorito */
+.fav-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #CCC;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.fav-btn.favorited {
+    color: #FF2A00; /* Vermelho Nu! */
+    transform: scale(1.2);
+    filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.2));
+}
+
+/* 3. Corpo do Card e Clima */
+.card-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    color: #555;
+    font-size: 0.95rem;
+}
+
+.info-row i {
+    color: #1A1A1A;
+}
+
+/* Widget de Clima */
+.weather-widget {
+    background-color: #E3F2FD;
+    border: 2px solid #1A1A1A;
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: #1A1A1A;
+    width: fit-content;
+    box-shadow: 3px 3px 0px rgba(0,0,0,0.1);
+}
+
+.weather-widget i {
+    font-size: 1.2rem;
+}
+
+.clima-sol { background-color: #FFF9C4; } /* Amarelo claro */
+.clima-chuva { background-color: #CFD8DC; } /* Cinza azulado */
+
+/* Tags */
+.card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.tag {
+    background: #1A1A1A;
+    color: #FFF;
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+}

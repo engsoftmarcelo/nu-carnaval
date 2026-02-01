@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/map.js
-   Lógica Geoespacial (Leaflet.js) - NEO-BRUTALISMO & REGIÕES
+   Lógica Geoespacial (Leaflet.js) - NEO-BRUTALISMO & FILTRAGEM
    ========================================================================== */
 
 let map = null;
@@ -13,36 +13,25 @@ let metroLayer = null;
 let wcLayer = null;
 let socorroLayer = null;
 
-// --- CONFIGURAÇÃO DE REGIÕES (Replicada para garantir autonomia do Map.js) ---
-const REGION_MAP_GEO = {
-    'sul': { color: '#E91E63', icon: 'fas fa-martini-glass-citrus' },
-    'centro': { color: '#FF2A00', icon: 'fas fa-building' },
-    'leste': { color: '#9C27B0', icon: 'fas fa-guitar' },
-    'pampulha': { color: '#00B0FF', icon: 'fas fa-water' },
-    'norte': { color: '#FF9100', icon: 'fas fa-road' },
-    'oeste': { color: '#FFC107', icon: 'fas fa-sun' },
-    'barreiro': { color: '#D50000', icon: 'fas fa-industry' },
-    'default': { color: '#1A1A1A', icon: 'fas fa-map-pin' }
+// --- CONFIGURAÇÃO DE TURNOS (Para o Pin do Mapa de Detalhes) ---
+const SHIFT_MAP_CONFIG = {
+    'manha': { color: '#FFD700', icon: 'fas fa-sun', label: 'Manhã' },  // Amarelo
+    'tarde': { color: '#FF5722', icon: 'fas fa-fire', label: 'Tarde' }, // Laranja
+    'noite': { color: '#673AB7', icon: 'fas fa-moon', label: 'Noite' }  // Roxo
 };
 
-function getRegionGeoConfig(bairro) {
-    if (!bairro) return REGION_MAP_GEO['default'];
-    const b = bairro.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+function getShiftConfig(horario) {
+    if (!horario) return SHIFT_MAP_CONFIG.tarde;
+    const hora = parseInt(horario.split(':')[0]);
     
-    if (b.includes('savassi') || b.includes('funcionarios') || b.includes('lurdes') || b.includes('sion')) return REGION_MAP_GEO['sul'];
-    if (b.includes('centro') || b.includes('floresta') || b.includes('barro preto')) return REGION_MAP_GEO['centro'];
-    if (b.includes('tereza') || b.includes('santa efigenia') || b.includes('horto')) return REGION_MAP_GEO['leste'];
-    if (b.includes('pampulha') || b.includes('jaragua') || b.includes('ouro preto')) return REGION_MAP_GEO['pampulha'];
-    if (b.includes('norte') || b.includes('venda nova')) return REGION_MAP_GEO['norte'];
-    if (b.includes('oeste') || b.includes('prado') || b.includes('gutierrez')) return REGION_MAP_GEO['oeste'];
-    if (b.includes('barreiro')) return REGION_MAP_GEO['barreiro'];
-    
-    return REGION_MAP_GEO['default'];
+    if (hora >= 5 && hora < 12) return SHIFT_MAP_CONFIG.manha;
+    if (hora >= 12 && hora < 18) return SHIFT_MAP_CONFIG.tarde;
+    return SHIFT_MAP_CONFIG.noite;
 }
 
 // --- DADOS DE SOBREVIVÊNCIA (Pontos Fixos) ---
 const DADOS_UTILIDADE = [
-    // Metrô (Mantido)
+    // Metrô
     { type: 'metro', name: 'Estação Eldorado', lat: -19.9329, lng: -44.0277, info: '🚨 Abre 05h Sábado! Terminal Oeste.' },
     { type: 'metro', name: 'Estação Cidade Industrial', lat: -19.9365, lng: -44.0173, info: 'Acesso Barreiro.' },
     { type: 'metro', name: 'Estação Gameleira', lat: -19.9275, lng: -43.9881, info: 'Acesso Expominas.' },
@@ -89,7 +78,7 @@ const criarIconeUtilidade = (tipo) => {
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 4px; /* Levemente arredondado, mas quadrado */
+            border-radius: 4px;
             transition: transform 0.1s;
         ">
             <i class="${iconClass}" style="color:${color}; font-size:16px;"></i>
@@ -123,7 +112,7 @@ export async function initMap(blocos) {
         maxZoom: 19
     }).addTo(map);
     
-    // Filtro CSS no mapa para ficar mais "clean/cinza" e destacar os blocos coloridos
+    // Filtro CSS no mapa para ficar mais "clean/cinza"
     tiles.getContainer().style.filter = 'grayscale(100%) contrast(1.1)';
 
     // Inicializa Camadas
@@ -165,46 +154,63 @@ export async function initMap(blocos) {
     }
 }
 
-// --- RENDERIZAÇÃO DOS BAIRROS ---
+// --- RENDERIZAÇÃO DOS BAIRROS (FILTRADOS) ---
 function renderizarBairros(geoJsonData) {
-    const defaultStyle = {
-        color: "#666",      
-        weight: 1,
-        fillColor: "#ccc",
-        fillOpacity: 0.1
+    
+    // 1. Identifica quais bairros possuem blocos (Lista Única)
+    const bairrosComFesta = new Set(
+        todosBlocosCache.map(b => normalizarTexto(b.neighborhood || b['bairro']))
+    );
+
+    // 2. Filtra o GeoJSON para manter APENAS esses bairros
+    const featuresFiltradas = geoJsonData.features.filter(feature => {
+        if (!feature.properties || !feature.properties.NOME) return false;
+        const nomeBairroMapa = normalizarTexto(feature.properties.NOME);
+        return bairrosComFesta.has(nomeBairroMapa);
+    });
+
+    const dadosFiltrados = {
+        type: "FeatureCollection",
+        features: featuresFiltradas
     };
 
-    // Estilo Hover mais agressivo (Brutalista)
+    // 3. Estilos Clean & Brutalist
+    const defaultStyle = {
+        color: "#1A1A1A",     // Borda preta forte (Estilo Cartoon)
+        weight: 2,
+        fillColor: "#FFFFFF", // Fundo branco para destacar no mapa cinza
+        fillOpacity: 0.5
+    };
+
     const hoverStyle = {
-        weight: 4,              // Borda grossa
-        color: "#000",          // Borda preta
-        fillColor: "#00B0FF",   // Azul cyan
-        fillOpacity: 0.4
+        weight: 4,
+        color: "#000",
+        fillColor: "#CCFF00", // Verde Neon no Hover
+        fillOpacity: 0.8
     };
 
     const activeStyle = {
-        weight: 4,
+        weight: 5,
         color: "#000",
-        fillColor: "#FF2A00",   // Laranja Neon
-        fillOpacity: 0.6
+        fillColor: "#FF2A00", // Laranja Nu! no Selecionado
+        fillOpacity: 1
     };
 
-    geoJsonLayer = L.geoJSON(geoJsonData, {
+    geoJsonLayer = L.geoJSON(dadosFiltrados, {
         style: defaultStyle,
         onEachFeature: function (feature, layer) {
             
-            if (feature.properties && feature.properties.NOME) {
-                layer.bindTooltip(feature.properties.NOME, {
-                    permanent: false, 
-                    direction: 'center',
-                    className: 'bairro-tooltip' // CSS customizado pode ser adicionado
-                });
-            }
+            // Tooltip com nome do bairro
+            layer.bindTooltip(feature.properties.NOME, {
+                permanent: false, 
+                direction: 'center',
+                className: 'bairro-tooltip'
+            });
 
             layer.on('mouseover', function () {
                 if(this !== window.selectedLayer) {
                     this.setStyle(hoverStyle);
-                    this.bringToFront(); // Traz para frente para ver a borda grossa
+                    this.bringToFront();
                 }
             });
             
@@ -269,7 +275,7 @@ function setupGeoButton() {
 
                 if (userMarker) map.removeLayer(userMarker);
 
-                // Marcador do Usuário: Círculo com borda MUITO grossa
+                // Marcador do Usuário
                 userMarker = L.circleMarker(userPos, {
                     radius: 10,
                     fillColor: "#CCFF00", // Verde Neon
@@ -314,10 +320,10 @@ export function focarCategoriaNoMapa(categoria) {
 }
 
 export function atualizarMarcadores(blocos) {
-    // Função mantida vazia conforme arquitetura original
+    // Função mantida para compatibilidade, caso expansão futura precise de marcadores individuais
 }
 
-// --- MAPA DE DETALHES (PIN PERSONALIZADO POR REGIÃO) ---
+// --- MAPA DE DETALHES (PIN PERSONALIZADO POR TURNO) ---
 export function renderDetalheMap(bloco) {
     const containerId = 'detalhe-mapa-interno';
     const container = document.getElementById(containerId);
@@ -347,13 +353,14 @@ export function renderDetalheMap(bloco) {
         maxZoom: 19
     }).addTo(mapDetalhe);
 
-    // --- CRIAÇÃO DO PIN PERSONALIZADO ---
-    const bairro = bloco.neighborhood || bloco['bairro'] || "Belo Horizonte";
-    const regConfig = getRegionGeoConfig(bairro); // Pega cor da região
+    // --- CRIAÇÃO DO PIN PERSONALIZADO (Por Turno) ---
+    // Agora usa a configuração de Turno (Manhã, Tarde, Noite) em vez de Região
+    const horario = bloco.time || bloco['Horário'];
+    const turnoConfig = getShiftConfig(horario);
 
     const pinHtml = `
         <div style="
-            background-color: ${regConfig.color};
+            background-color: ${turnoConfig.color};
             width: 36px;
             height: 36px;
             border: 2px solid #000;
@@ -365,7 +372,7 @@ export function renderDetalheMap(bloco) {
             font-size: 16px;
             border-radius: 4px; /* Quadrado */
         ">
-            <i class="${regConfig.icon}"></i>
+            <i class="${turnoConfig.icon}"></i>
         </div>
         <div style="
             width: 0; 

@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - ATUALIZADO (Regiões Neo-Brutalismo & Config Central)
+   Camada de Interface - COMPLETO (Turnos, Clima Corrigido & Neo-Brutalismo)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn, toggleFavorito } from './storage.js';
@@ -10,56 +10,43 @@ import { enviarVibe, monitorarVibe } from './firebase.js';
 
 let unsubscribeVibe = null;
 
-// --- CONFIGURAÇÃO CENTRAL DE REGIÕES (NEO-BRUTALISMO) ---
-const REGION_MAP = {
-    'sul': { 
-        keywords: ['savassi', 'funcionarios', 'lurdes', 'lourdes', 'sion', 'belvedere', 'santo antonio', 'sao pedro', 'chiara'],
-        css: 'reg-sul', icon: 'fas fa-martini-glass-citrus', color: '#E91E63', bg: '#FCE4EC' // Rosa
+// --- CONFIGURAÇÃO DE TURNOS (Personalização por Horário) ---
+const SHIFT_CONFIG = {
+    'manha': { 
+        label: 'Manhã', 
+        icon: 'fa-sun', 
+        color: '#FFD700', // Amarelo Ouro
+        bg: '#FFF9C4',
+        border: '#FBC02D',
+        text: '#000'
     },
-    'centro': { 
-        keywords: ['centro', 'floresta', 'barro preto', 'boa viagem', 'maletta'],
-        css: 'reg-centro', icon: 'fas fa-building', color: '#FF2A00', bg: '#FFEBEE' // Vermelho/Laranja Vibrante
+    'tarde': { 
+        label: 'Tarde', 
+        icon: 'fa-fire', 
+        color: '#FF5722', // Laranja Intenso
+        bg: '#FFCCBC',
+        border: '#E64A19',
+        text: '#000'
     },
-    'leste': { 
-        keywords: ['santa tereza', 'santa efigenia', 'horto', 'pompeia', 'sagrada familia', 'esplanada'],
-        css: 'reg-leste', icon: 'fas fa-guitar', color: '#9C27B0', bg: '#F3E5F5' // Roxo
-    },
-    'pampulha': { 
-        keywords: ['pampulha', 'jaragua', 'liberdade', 'ouro preto', 'castelo', 'sao luiz', 'bandeirantes'],
-        css: 'reg-pampulha', icon: 'fas fa-water', color: '#00B0FF', bg: '#E1F5FE' // Azul Cyan
-    },
-    'norte': {
-        keywords: ['norte', 'venda nova', 'planalto', 'guarani', 'jaqueline'],
-        css: 'reg-norte', icon: 'fas fa-road', color: '#FF9100', bg: '#FFF3E0' // Laranja
-    },
-    'oeste': {
-        keywords: ['oeste', 'prado', 'gutierrez', 'barroca', 'nova granada', 'calafate'],
-        css: 'reg-oeste', icon: 'fas fa-sun', color: '#FFC107', bg: '#FFF8E1' // Amarelo Ouro
-    },
-    'barreiro': {
-        keywords: ['barreiro', 'milionarios', 'jatoba', 'diamante'],
-        css: 'reg-barreiro', icon: 'fas fa-industry', color: '#D50000', bg: '#FFEBEE' // Vermelho Escuro
-    },
-    'default': { 
-        keywords: [],
-        css: 'reg-geral', icon: 'fas fa-map-pin', color: '#1A1A1A', bg: '#F5F5F5' // Preto/Cinza
+    'noite': { 
+        label: 'Noite', 
+        icon: 'fa-moon', 
+        color: '#673AB7', // Roxo Profundo
+        bg: '#D1C4E9',
+        border: '#512DA8',
+        text: '#FFF'
     }
 };
 
 // --- FUNÇÕES AUXILIARES DE LÓGICA ---
 
-function getRegionConfig(bairro) {
-    if (!bairro) return REGION_MAP['default'];
+function getTurnoConfig(horario) {
+    if (!horario) return SHIFT_CONFIG.tarde;
+    const hora = parseInt(horario.split(':')[0]);
     
-    const b = bairro.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    
-    // Procura em qual região o bairro se encaixa
-    for (const [key, config] of Object.entries(REGION_MAP)) {
-        if (config.keywords && config.keywords.some(k => b.includes(k))) {
-            return config;
-        }
-    }
-    return REGION_MAP['default'];
+    if (hora >= 5 && hora < 12) return SHIFT_CONFIG.manha;
+    if (hora >= 12 && hora < 18) return SHIFT_CONFIG.tarde;
+    return SHIFT_CONFIG.noite;
 }
 
 function getCountdownHTML(dataStr, horaStr) {
@@ -245,13 +232,17 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
     listaBlocos.forEach(bloco => {
         const article = document.createElement('article');
         
-        const bairro = bloco.neighborhood || bloco['bairro'] || "Belo Horizonte";
-        const regConfig = getRegionConfig(bairro);
+        // Dados
+        const nome = bloco.name || bloco['Nome do Bloco'];
+        const bairro = bloco.neighborhood || bloco['bairro'] || "BH";
+        const horario = bloco.time || bloco['Horário'] || "00:00";
         
-        // Aplica classe da região
-        article.className = `bloco-card ${regConfig.css}`;
-        // Remove borda lateral antiga se formos usar cabeçalho colorido, ou mantém para reforço
-        // article.style.borderLeft = `5px solid ${regConfig.color}`; 
+        // Configuração de Estilo por TURNO
+        const turno = getTurnoConfig(horario);
+        
+        article.className = 'bloco-card';
+        // Borda esquerda colorida baseada no turno
+        article.style.borderLeft = `6px solid ${turno.color}`;
         
         article.onclick = (e) => {
             if (e.target.closest('.fav-btn')) return;
@@ -265,26 +256,34 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
         const estilos = Array.isArray(bloco.musical_style) ? bloco.musical_style : (bloco['Estilo Musical'] ? [bloco['Estilo Musical']] : []);
         const estilosTags = estilos.map(style => `<span class="tag">${style}</span>`).join(' ');
         
-        // HEADER VIBRANTE (NEO-BRUTALISMO)
-        // Usamos a cor da região como background do header e texto branco
         article.innerHTML = `
-            <div class="card-header" style="background-color: ${regConfig.color}; border-bottom: 2px solid #000; padding: 12px;">
-                <div class="card-emoji-badge" style="background: #FFF; border: 2px solid #000; color: #000;">
-                    <i class="${regConfig.icon}"></i>
+            <div class="card-header" style="background-color: #FAFAFA; border-bottom: 2px solid #1A1A1A; padding: 12px; display: flex; align-items: flex-start; justify-content: space-between;">
+                <div style="display: flex; flex-direction: column; gap: 4px; width: 85%;">
+                     <span class="turno-badge" style="background:${turno.bg}; color:${turno.border}; border: 1px solid ${turno.border}; align-self: flex-start; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                        <i class="fas ${turno.icon}"></i> ${turno.label} • ${horario}
+                    </span>
+                    <h3 style="color: #1A1A1A; margin: 0; font-family: 'Anton', sans-serif; font-size: 1.3rem; line-height: 1.1; text-transform: uppercase;">${nome}</h3>
                 </div>
-                <h3 style="color: #FFF; text-shadow: 2px 2px 0px #000; flex: 1;">${bloco.name || bloco['Nome do Bloco']}</h3>
-                <button class="fav-btn ${favoritoClass}" data-id="${bloco.id}" style="color: #FFF; border-color: #FFF;">
+                <button class="fav-btn ${favoritoClass}" data-id="${bloco.id}" style="color: #CCC; background: none; border: none; font-size: 1.4rem; cursor: pointer;">
                     <i class="${iconHeart}"></i>
                 </button>
             </div>
-            <div class="card-body" style="background: ${regConfig.bg};">
+            
+            <div class="card-body" style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
                 ${statusHTML}
-                <div class="card-info weather-placeholder" id="weather-${bloco.id}"></div>
-                <div class="card-info" style="color: #000; font-weight: 500;">
-                    <i class="fas fa-map-marker-alt" style="color: ${regConfig.color};"></i>
+                
+                <div class="info-row" style="display: flex; align-items: center; gap: 8px; color: #555; font-weight: 700;">
+                    <i class="fas fa-map-marker-alt" style="color: #1A1A1A;"></i>
                     <span>${bairro}</span>
                 </div>
-                <div class="card-tags">${estilosTags}</div>
+
+                <div id="weather-${bloco.id}" class="weather-widget" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.9rem; color: #1A1A1A;">
+                    <span style="color: #999;">...</span>
+                </div>
+
+                <div class="card-tags" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                    ${estilosTags}
+                </div>
             </div>
         `;
 
@@ -295,10 +294,16 @@ export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
     atualizarClimaDosCards(listaBlocos);
 }
 
+// --- FUNÇÃO DE CLIMA (COM CORREÇÃO FALLBACK) ---
 async function atualizarClimaDosCards(blocos) {
+    // Coordenadas do Centro de BH (Fallback)
+    const BH_LAT = -19.917299;
+    const BH_LNG = -43.934559;
+
     for (const bloco of blocos) {
-        const lat = bloco.lat || bloco['Latitude Local de Concentração'];
-        const lng = bloco.lng || bloco['Longitude Local de Concentração'];
+        // Usa as coordenadas do bloco OU usa as de BH se não tiver
+        const lat = bloco.lat || bloco['Latitude Local de Concentração'] || BH_LAT;
+        const lng = bloco.lng || bloco['Longitude Local de Concentração'] || BH_LNG;
         const data = bloco.date || bloco['Data']; 
 
         if (lat && lng && data) {
@@ -311,11 +316,19 @@ async function atualizarClimaDosCards(blocos) {
             if (clima) {
                 const el = document.getElementById(`weather-${bloco.id}`);
                 if (el) {
+                    // Define cor se for chuva
+                    const isRain = clima.icone.includes('rain') || clima.icone.includes('bolt') || clima.icone.includes('cloud-showers');
+                    const bgClima = isRain ? '#CFD8DC' : '#FFF9C4';
+                    
+                    el.style.backgroundColor = bgClima;
+                    el.style.padding = '4px 8px';
+                    el.style.borderRadius = '4px';
+                    el.style.border = '1px solid #1A1A1A';
+                    
                     el.innerHTML = `
                         <i class="fas ${clima.icone}" title="Máx: ${clima.tempMax}°C"></i>
                         <span>${clima.tempMax}°C</span>
                     `;
-                    el.classList.add(clima.icone.includes('rain') || clima.icone.includes('bolt') ? 'clima-chuva' : 'clima-sol');
                 }
             }
         }
@@ -331,9 +344,14 @@ export async function mostrarDetalhes(bloco) {
 
     const container = document.getElementById('detalhes-conteudo');
     
-    // Configurações da Região
+    // Dados Básicos
+    const nome = bloco.name || bloco['Nome do Bloco'];
     const bairro = bloco.neighborhood || bloco['bairro'] || "Belo Horizonte";
-    const regConfig = getRegionConfig(bairro); 
+    const horario = bloco.time || bloco['Horário'] || "00:00";
+    
+    // Configurações do Turno
+    const turno = getTurnoConfig(horario);
+    
     const estilosMusicais = Array.isArray(bloco.musical_style) ? bloco.musical_style.join(' • ') : (bloco['Estilo Musical'] || 'Diversos');
 
     // Botão Favorito no Header
@@ -347,9 +365,11 @@ export async function mostrarDetalhes(bloco) {
             if(isFav) {
                 novoBotao.classList.add('favorited');
                 novoBotao.innerHTML = '<i class="fas fa-heart"></i>';
+                novoBotao.style.color = '#FF2A00';
             } else {
                 novoBotao.classList.remove('favorited');
                 novoBotao.innerHTML = '<i class="far fa-heart"></i>';
+                novoBotao.style.color = '#1A1A1A';
             }
         };
         
@@ -368,10 +388,8 @@ export async function mostrarDetalhes(bloco) {
         });
     }
 
-    // Dados do Bloco
-    const nome = bloco.name || bloco['Nome do Bloco'];
+    // Mais Dados
     const local = bloco.location || bloco['Local de Concentração'] || 'Local a definir';
-    const horario = bloco.time || bloco['Horário'];
     const dataOriginal = bloco.date || bloco['Data'];
     const dataExibicao = dataOriginal.split('-').reverse().join('/'); // Ex: 15/02/2026
     const diaMesTicket = dataExibicao.substring(0, 5); 
@@ -384,80 +402,78 @@ export async function mostrarDetalhes(bloco) {
     const uberUrl = `https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]=${enderecoBusca}&dropoff[nickname]=${apelidoLocal}`;
     const url99 = `https://d.99app.com/`; 
 
-    // Renderização HTML com Estilo da Região
+    // Renderização HTML com Estilo do Turno
     container.innerHTML = `
-        <div class="detalhe-wrapper ${regConfig.css}">
+        <div class="detalhe-wrapper">
             
-            <div class="detalhe-hero" style="border-bottom: 4px solid #000; background: linear-gradient(to bottom, #FFF 0%, ${regConfig.bg} 100%);">
-                <div class="detalhe-header-top">
-                    <span class="audience-pill" style="background-color: ${regConfig.color}; color: white; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
-                        <i class="${regConfig.icon}"></i> ${bairro}
+            <div class="detalhe-hero" style="border-bottom: 4px solid #000; background: linear-gradient(to bottom, #FFF 0%, ${turno.bg} 100%); padding: 20px;">
+                <div class="detalhe-header-top" style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                    <span class="audience-pill" style="background-color: ${turno.color}; color: #000; border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 4px 12px; border-radius: 20px; font-weight:bold; font-size:0.8rem; text-transform:uppercase;">
+                        <i class="fas ${turno.icon}"></i> ${turno.label}
                     </span>
                     ${getStatusPill(bloco)}
                 </div>
 
-                <h1 class="detalhe-titulo" style="color: #1A1A1A;">${nome}</h1>
-                <p class="detalhe-subtitulo" style="color: ${regConfig.color}; font-weight: 700;">${estilosMusicais}</p>
+                <h1 class="detalhe-titulo" style="color: #1A1A1A; font-family:'Anton', sans-serif; text-transform:uppercase; font-size:2rem; line-height:1; margin-bottom:8px;">${nome}</h1>
+                <p class="detalhe-subtitulo" style="color: #1A1A1A; font-weight: 700; opacity:0.8;">${estilosMusicais}</p>
                 
                 ${getCountdownHTML(dataOriginal, horario)}
 
-                <div class="detalhe-grid-info">
-                    <div class="info-item" style="border-color: #000;">
-                        <i class="far fa-calendar-alt"></i>
-                        <span class="label">Dia</span>
-                        <span class="valor">${diaMesTicket}</span>
+                <div class="detalhe-grid-info" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:20px;">
+                    <div class="info-item" style="border: 2px solid #000; background:#FFF; padding:10px; border-radius:8px; text-align:center;">
+                        <i class="far fa-calendar-alt" style="color:${turno.color}; font-size:1.2rem; display:block; margin-bottom:4px;"></i>
+                        <span class="valor" style="font-weight:800; font-size:1.1rem; display:block;">${diaMesTicket}</span>
                     </div>
-                    <div class="info-item" style="border-color: #000;">
-                        <i class="far fa-clock"></i>
-                        <span class="label">Hora</span>
-                        <span class="valor">${horario}</span>
+                    <div class="info-item" style="border: 2px solid #000; background:#FFF; padding:10px; border-radius:8px; text-align:center;">
+                        <i class="far fa-clock" style="color:${turno.color}; font-size:1.2rem; display:block; margin-bottom:4px;"></i>
+                        <span class="valor" style="font-weight:800; font-size:1.1rem; display:block;">${horario}</span>
                     </div>
                 </div>
 
-                <div id="weather-slot" style="margin-top: 8px;"></div>
+                <div id="weather-slot" style="margin-top: 12px;"></div>
                 
-                ${descricao ? `<div class="detalhe-descricao">"${descricao}"</div>` : ''}
+                ${descricao ? `<div class="detalhe-descricao" style="margin-top:16px; font-style:italic; border-left:4px solid ${turno.color}; padding-left:12px; color:#555;">"${descricao}"</div>` : ''}
 
-                <button id="btn-checkin-action" class="btn-checkin ${isCheckedIn(bloco.id) ? 'checked' : ''}" data-id="${bloco.id}">
+                <button id="btn-checkin-action" class="btn-checkin ${isCheckedIn(bloco.id) ? 'checked' : ''}" data-id="${bloco.id}" style="width:100%; margin-top:20px; padding:16px; font-weight:bold; text-transform:uppercase; border:2px solid #000; background:#1A1A1A; color:#FFF; box-shadow:4px 4px 0px rgba(0,0,0,0.2);">
                     <i class="${isCheckedIn(bloco.id) ? 'fas fa-check-circle' : 'far fa-circle'}"></i> 
                     <span>${isCheckedIn(bloco.id) ? 'Fui e sobrevivi!' : 'Marcar presença'}</span>
                 </button>
             </div>
 
-            <div class="utility-card">
-                <h3><i class="fas fa-map-marked-alt"></i> Como Chegar</h3>
+            <div class="utility-card" style="margin:20px; padding:16px; border:2px solid #000; border-radius:12px; background:#FFF; box-shadow:6px 6px 0px #000;">
+                <h3 style="margin-bottom:12px;"><i class="fas fa-map-marked-alt"></i> Como Chegar</h3>
                 
-                <div class="card-local-texto">
+                <div class="card-local-texto" style="margin-bottom:16px;">
                     <h4 style="margin-bottom:4px; color:#1A1A1A; font-size:1.1rem;">${local}</h4>
-                    <p style="color:${regConfig.color}; font-weight:bold;">${bairro}</p>
+                    <p style="color:#666; font-weight:bold;">${bairro}</p>
                 </div>
 
-                <div class="botoes-mapa-grid">
-                    <a href="${uberUrl}" class="btn-transport btn-uber">
-                        <i class="fab fa-uber"></i> Uber
+                <div class="botoes-mapa-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+                    <a href="${uberUrl}" class="btn-transport" style="text-align:center; padding:10px; border:2px solid #000; border-radius:6px; color:#000; font-weight:bold; text-decoration:none;">
+                        Uber
                     </a>
-                    <a href="${url99}" target="_blank" class="btn-transport btn-99">
-                        <span class="icon-99">99</span> 99
+                    <a href="${url99}" target="_blank" class="btn-transport" style="text-align:center; padding:10px; border:2px solid #000; border-radius:6px; color:#000; font-weight:bold; text-decoration:none;">
+                        99
                     </a>
-                    <a href="${mapsUrl}" target="_blank" class="btn-transport btn-maps">
-                        <i class="fas fa-location-arrow"></i> Maps
+                    <a href="${mapsUrl}" target="_blank" class="btn-transport" style="text-align:center; padding:10px; border:2px solid #000; border-radius:6px; color:#000; font-weight:bold; text-decoration:none;">
+                        Maps
                     </a>
                 </div>
             </div>
 
-            <div class="vibe-section utility-card">
-                <h3 style="color: var(--color-primary);"><i class="fas fa-satellite-dish"></i> Vibe Check</h3>
+            <div class="vibe-section utility-card" style="margin:20px; padding:16px; border:2px solid #000; border-radius:12px; background:#F5F5F5; box-shadow:6px 6px 0px #999;">
+                <h3 style="color: #1A1A1A;"><i class="fas fa-satellite-dish"></i> Vibe Check</h3>
                 <p style="font-size: 0.9rem; margin-bottom: 12px; color: #666;">Como tá o bloco agora?</p>
 
                 <div id="vibe-display" class="vibe-display loading">
                     <span class="vibe-status">Carregando...</span>
                     <div class="vibe-badges"></div>
                 </div>
-                <div id="vibe-controls" class="vibe-controls">
+                <div id="vibe-controls" class="vibe-controls" style="display:flex; gap:8px; margin-top:12px;">
                      ${ getAuth().currentUser ? `
-                        <button class="btn-vibe btn-fogo" data-tipo="fogo">🔥<br>Fervendo</button>
-                        <button class="btn-vibe btn-morto" data-tipo="morto">💀<br>Morgado</button>
-                        <button class="btn-vibe btn-policia" data-tipo="policia">👮<br>Polícia</button>
+                        <button class="btn-vibe btn-fogo" data-tipo="fogo" style="flex:1; padding:12px; border:2px solid #000; border-radius:8px; background:#FFF;">🔥<br>Fervendo</button>
+                        <button class="btn-vibe btn-morto" data-tipo="morto" style="flex:1; padding:12px; border:2px solid #000; border-radius:8px; background:#FFF;">💀<br>Morgado</button>
+                        <button class="btn-vibe btn-policia" data-tipo="policia" style="flex:1; padding:12px; border:2px solid #000; border-radius:8px; background:#FFF;">👮<br>Polícia</button>
                     ` : `
                         <div class="login-lock"><i class="fas fa-lock"></i> Faça login para votar!</div>
                     `}
@@ -470,15 +486,26 @@ export async function mostrarDetalhes(bloco) {
     mudarVisualizacao('view-detalhes');
 
     requestAnimationFrame(() => {
-        if (bloco.lat && bloco.lng) {
+        // Fallback de coordenadas para Clima nos Detalhes
+        const BH_LAT = -19.917299;
+        const BH_LNG = -43.934559;
+        
+        const lat = bloco.lat || bloco['Latitude Local de Concentração'] || BH_LAT;
+        const lng = bloco.lng || bloco['Longitude Local de Concentração'] || BH_LNG;
+        const dataOriginal = bloco.date || bloco['Data'];
+
+        if (lat && lng && dataOriginal) {
             const dataFormatada = dataOriginal.split('/').reverse().join('-');
-            getPrevisaoTempo(bloco.lat, bloco.lng, dataFormatada).then(clima => {
+            getPrevisaoTempo(lat, lng, dataFormatada).then(clima => {
                 const el = document.getElementById('weather-slot');
                 if (el && clima) {
+                    const isRain = clima.icone.includes('rain') || clima.icone.includes('bolt') || clima.icone.includes('cloud-showers');
+                    const corClima = isRain ? '#CFD8DC' : '#FFF9C4';
+                    
                     el.innerHTML = `
-                        <div class="detalhe-clima ${clima.icone.includes('rain') ? 'chuva' : 'sol'}">
-                            <i class="fas ${clima.icone}"></i>
-                            <span>Previsão: <strong>${clima.tempMax}°C</strong> (${clima.resumo || 'Sem chuva'})</span>
+                        <div class="detalhe-clima" style="background:${corClima}; padding:8px 12px; border:2px solid #000; border-radius:8px; display:flex; align-items:center; gap:10px;">
+                            <i class="fas ${clima.icone}" style="font-size:1.5rem;"></i>
+                            <span>Previsão: <strong>${clima.tempMax}°C</strong> (${clima.resumo || 'N/A'})</span>
                         </div>`;
                 }
             });
@@ -501,7 +528,7 @@ function getStatusPill(bloco) {
     const horaBloco = parseInt(hora.split(':')[0]);
     
     if (dataIso === hoje && agora >= horaBloco && agora < horaBloco + 5) {
-        return `<span class="status-live-pill">AO VIVO 🔥</span>`;
+        return `<span class="status-live-pill" style="background:#FF2A00; color:#FFF; padding:4px 8px; font-weight:bold; border-radius:4px; border:1px solid #000;">AO VIVO 🔥</span>`;
     }
     return '';
 }
@@ -519,16 +546,21 @@ function iniciarVibeCheck(bloco) {
         statusEl.textContent = data.statusTexto;
         
         displayEl.className = 'vibe-display'; 
-        if (data.score > 3) displayEl.classList.add('vibe-hot');
-        else if (data.score < -1) displayEl.classList.add('vibe-dead');
-        else displayEl.classList.add('vibe-neutral');
+        if (data.score > 3) {
+            displayEl.style.backgroundColor = '#FFCCBC'; // Quente
+            displayEl.style.border = '2px solid #E64A19';
+        } else if (data.score < -1) {
+            displayEl.style.backgroundColor = '#E0E0E0'; // Morto
+        } else {
+            displayEl.style.backgroundColor = '#FFF'; // Neutro
+        }
 
         badgesEl.innerHTML = '';
         if (data.temPolicia) {
             badgesEl.innerHTML += `<span class="badge-policia">👮 Policiamento</span>`;
         }
         if (data.total > 0) {
-            badgesEl.innerHTML += `<span class="badge-count">${data.total} votos</span>`;
+            badgesEl.innerHTML += `<span class="badge-count" style="font-size:0.8rem; margin-left:8px; color:#666;">(${data.total} votos)</span>`;
         }
     });
 
@@ -621,14 +653,14 @@ function getStatusHTML(bloco) {
     const isRolando = isHoje && (agora >= horaBloco && agora < horaBloco + 5);
 
     if (isRolando) {
-        return `<div class="status-live" style="background:var(--color-cta); color:black; border:2px solid black; padding:2px 6px; font-weight:800; transform:rotate(-1deg);">TÁ ROLANDO!</div>`;
+        return `<div class="status-live" style="background:#00E676; color:black; border:2px solid black; padding:4px 8px; font-weight:800; display:inline-block; margin-bottom:8px;">TÁ ROLANDO!</div>`;
     } else {
         const diaMes = data.includes('-') ? data.split('-').reverse().slice(0, 2).join('/') : data.substring(0, 5);
-        return `<div class="card-info"><i class="far fa-clock"></i><span style="font-weight:700; color: #1A1A1A;">${diaMes} às ${hora}</span></div>`;
+        return `<div class="card-info" style="color:#666; font-size:0.9rem;"><i class="far fa-clock"></i> <span style="font-weight:700; color: #1A1A1A;">${diaMes} às ${hora}</span></div>`;
     }
 }
 
-// --- TIMELINE DE FAVORITOS ---
+// --- TIMELINE E OUTROS ---
 export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
     const container = document.getElementById(containerId);
     container.innerHTML = ''; 
@@ -707,34 +739,36 @@ export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
 
 function criarCardTimeline(bloco) {
     const article = document.createElement('article');
-    const bairro = bloco.neighborhood || bloco['bairro'] || "Belo Horizonte";
-    const regConfig = getRegionConfig(bairro);
     
-    article.className = `bloco-card ${regConfig.css}`;
+    // Config Turno
+    const horario = bloco.time || bloco['Horário'];
+    const turno = getTurnoConfig(horario);
+
+    article.className = 'bloco-card';
     article.onclick = (e) => {
         if (e.target.closest('.fav-btn')) return;
         mostrarDetalhes(bloco); 
     };
 
     const nome = bloco.name || bloco['Nome do Bloco'];
-    const hora = bloco.time || bloco['Horário'];
+    const bairro = bloco.neighborhood || bloco['bairro'] || "BH";
 
     article.innerHTML = `
-        <div class="card-header" style="padding: 12px; background-color: ${regConfig.color}; border-bottom:2px solid #000;">
+        <div class="card-header" style="padding: 12px; background-color: ${turno.bg}; border-bottom:2px solid #000;">
             <div class="card-emoji-badge" style="font-size: 1.2rem; margin-right:6px; background:#FFF; border:2px solid #000; color:#000;">
-                <i class="${regConfig.icon}"></i>
+                <i class="fas ${turno.icon}"></i>
             </div>
-            <h3 style="font-size: 1.1rem; color:#FFF; text-shadow:1px 1px 0 #000;">${nome}</h3>
-            <button class="fav-btn favorited" data-id="${bloco.id}" style="color:#FFF; border-color:#FFF;">
+            <h3 style="font-size: 1.1rem; color:#1A1A1A; font-weight:800;">${nome}</h3>
+            <button class="fav-btn favorited" data-id="${bloco.id}" style="color:#FF2A00; border:none; background:none;">
                 <i class="fas fa-heart"></i>
             </button>
         </div>
-        <div class="card-body" style="padding: 0 12px 12px 12px; background: ${regConfig.bg};">
-            <div class="card-info" style="margin-top:8px;">
+        <div class="card-body" style="padding: 12px;">
+            <div class="card-info" style="margin-top:0;">
                 <i class="far fa-clock"></i>
-                <span style="font-weight:800; color: #1A1A1A;">${hora}</span>
+                <span style="font-weight:800; color: #1A1A1A;">${horario}</span>
                 <span style="margin: 0 8px; color:#1A1A1A;">|</span>
-                <i class="fas fa-map-marker-alt" style="color: ${regConfig.color};"></i>
+                <i class="fas fa-map-marker-alt"></i>
                 <span style="color: #1A1A1A;">${bairro}</span>
             </div>
         </div>
