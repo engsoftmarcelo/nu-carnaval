@@ -5,7 +5,8 @@
    ========================================================================== */
 
 import { carregarDados } from './data.js';
-import { renderBlocos, mudarVisualizacao, atualizarBotaoFavorito, renderTimeline, renderStats, mostrarDetalhes, renderPoster } from './ui.js';
+// ADICIONADO: renderDestaques na importação
+import { renderBlocos, mudarVisualizacao, atualizarBotaoFavorito, renderTimeline, renderStats, mostrarDetalhes, renderPoster, renderDestaques } from './ui.js';
 import { initMap, atualizarMarcadores, focarCategoriaNoMapa } from './map.js';
 import { getFavoritos, toggleFavorito, importarFavoritos, toggleCheckin, getCheckinCount } from './storage.js';
 import { NotificationManager } from './notifications.js';
@@ -78,6 +79,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 3. Inicializa o Mapa (Passando os dados para o cache do mapa)
         initMap(appState.todosBlocos); 
+
+        // --- NOVO: Renderiza os Destaques (Artistas) no topo da lista ---
+        renderDestaques(appState.todosBlocos);
 
         // 4. Renderiza a lista inicial
         aplicarFiltros();

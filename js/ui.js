@@ -1,15 +1,16 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - ATUALIZADO (Sem Mapa, Transportes por Texto, Tickets)
+   Camada de Interface - COMPLETO E CORRIGIDO
    ========================================================================== */
 
 import { isFavorito, isCheckedIn, toggleFavorito } from './storage.js';
 import { getPrevisaoTempo } from './weather.js';
-// O import do mapa foi removido pois não vamos mais usá-lo na tela de detalhes
 import { getAuth } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 import { enviarVibe, monitorarVibe } from './firebase.js';
 
 let unsubscribeVibe = null;
+
+// --- FUNÇÕES AUXILIARES DE ESTILO E LÓGICA ---
 
 /**
  * Retorna a configuração de estilo baseada no público.
@@ -87,6 +88,107 @@ function getCountdownHTML(dataStr, horaStr) {
     return '<div class="hype-counter" style="background:#FF2A00; color:#FFF;">🚀 PREPARA! É JÁ JÁ!</div>';
 }
 
+// --- FUNÇÃO PARA RENDERIZAR CARROSSEL DE DESTAQUES (COM AUTO-SCROLL CORRIGIDO) ---
+export function renderDestaques(todosBlocos) {
+    const container = document.getElementById('carousel-destaques');
+    if (!container) return;
+
+    // Filtra blocos especiais com imagem
+    // Aceita true (boolean) ou "true" (string)
+    const destaquesOriginais = todosBlocos.filter(b => 
+        (b.is_special === true || b.is_special === "true") && b.artist_image
+    );
+
+    if (destaquesOriginais.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    // DUPLICAR A LISTA: Garante itens suficientes para o scroll contínuo
+    let listaFinal = [...destaquesOriginais];
+    // Garante no mínimo 4 cópias para ter fluxo contínuo mesmo com poucos destaques
+    while (listaFinal.length < 10) { 
+        listaFinal = [...listaFinal, ...destaquesOriginais];
+    }
+
+    container.innerHTML = '';
+    container.style.display = 'flex';
+
+    // Cria o wrapper do scroll
+    const wrapper = document.createElement('div');
+    wrapper.className = 'destaques-wrapper';
+    
+    // --- CORREÇÃO DO SCROLL TRAVADO ---
+    // Sobrescreve o CSS para evitar conflito com a animação JS
+    wrapper.style.scrollBehavior = 'auto'; 
+    wrapper.style.overflowX = 'hidden'; 
+
+    listaFinal.forEach(bloco => {
+        const card = document.createElement('div');
+        card.className = 'destaque-card';
+        card.onclick = () => mostrarDetalhes(bloco);
+
+        const data = bloco.date || bloco['Data'];
+        const dataFormatada = data ? (data.includes('-') ? data.split('-').reverse().slice(0, 2).join('/') : data.substring(0, 5)) : '';
+        const horario = bloco.time || bloco['Horário'];
+        const nomeBloco = bloco.name || bloco['Nome do Bloco'];
+        const artista = bloco.artist || "Artista Convidado";
+
+        card.innerHTML = `
+            <div class="destaque-img-container">
+                <img src="${bloco.artist_image}" alt="${artista}" class="destaque-img" loading="lazy">
+                <div class="destaque-overlay"></div>
+                <span class="destaque-badge">⭐ Destaque</span>
+            </div>
+            <div class="destaque-info">
+                <h3 class="destaque-artista">${artista}</h3>
+                <p class="destaque-bloco">No bloco: <strong>${nomeBloco}</strong></p>
+                <div class="destaque-data">
+                    <i class="far fa-calendar-alt"></i> ${dataFormatada} às ${horario}
+                </div>
+            </div>
+        `;
+        wrapper.appendChild(card);
+    });
+
+    container.appendChild(wrapper);
+
+    // --- LÓGICA DE ANIMAÇÃO ---
+    let isPaused = false;
+    let scrollPos = 0;
+    const speed = 1.0; 
+
+    // Cálculo da largura: Card (280px) + Gap (16px) = 296px
+    const itemWidth = 296; 
+    // O ponto de reset é quando rolamos o equivalente à lista ORIGINAL de itens
+    const resetPoint = destaquesOriginais.length * itemWidth;
+
+    function animateScroll() {
+        if (!isPaused && wrapper) {
+            scrollPos += speed;
+            
+            // Loop infinito: Se passou do ponto de reset, volta o scroll para 0 (sem o usuário perceber)
+            // Isso funciona porque a lista está duplicada visualmente
+            if (scrollPos >= resetPoint) {
+                scrollPos = 0;
+            }
+            
+            wrapper.scrollLeft = scrollPos;
+        }
+        requestAnimationFrame(animateScroll);
+    }
+
+    // Controles de Pausa
+    wrapper.addEventListener('mouseenter', () => isPaused = true);
+    wrapper.addEventListener('mouseleave', () => isPaused = false);
+    wrapper.addEventListener('touchstart', () => isPaused = true);
+    wrapper.addEventListener('touchend', () => setTimeout(() => isPaused = false, 1000));
+
+    // Inicia o loop
+    requestAnimationFrame(animateScroll);
+}
+
+// --- RENDERIZAÇÃO DA LISTA DE BLOCOS ---
 export function renderBlocos(listaBlocos, containerId = 'lista-blocos') {
     const container = document.getElementById(containerId);
     container.innerHTML = '';
@@ -183,7 +285,7 @@ async function atualizarClimaDosCards(blocos) {
     }
 }
 
-// --- FUNÇÃO PRINCIPAL DE DETALHES (ATUALIZADA) ---
+// --- FUNÇÃO PRINCIPAL DE DETALHES ---
 export async function mostrarDetalhes(bloco) {
     if (unsubscribeVibe) {
         unsubscribeVibe();
@@ -238,15 +340,13 @@ export async function mostrarDetalhes(bloco) {
     // 4. Countdown
     const countdownHTML = getCountdownHTML(dataOriginal, horario);
 
-    // 5. LÓGICA DE TRANSPORTE (POR TEXTO - SEM COORDENADAS)
-    // Isso garante que os botões sempre apareçam
+    // 5. LÓGICA DE TRANSPORTE
     const enderecoBusca = encodeURIComponent(`${local}, ${bairro}, Belo Horizonte, MG`);
     const apelidoLocal = encodeURIComponent(nome);
 
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${enderecoBusca}`;
-    // Tenta usar formatted_address para ajudar o Uber a encontrar o local
     const uberUrl = `https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]=${enderecoBusca}&dropoff[nickname]=${apelidoLocal}`;
-    const url99 = `https://d.99app.com/`; // Link genérico pois deep link da 99 é instável com busca de texto
+    const url99 = `https://d.99app.com/`; 
 
     // 6. Renderização HTML
     container.innerHTML = `
@@ -340,8 +440,7 @@ export async function mostrarDetalhes(bloco) {
 
     // 8. Pós-Render
     requestAnimationFrame(() => {
-        // Renderiza Clima apenas se tiver coords (mantivemos essa verificação p/ clima pois precisa de precisão)
-        // Se quiser clima genérico de BH, teríamos que mudar a lógica do weather.js
+        // Renderiza Clima
         if (bloco.lat && bloco.lng) {
             const dataFormatada = dataOriginal.split('/').reverse().join('-');
             getPrevisaoTempo(bloco.lat, bloco.lng, dataFormatada).then(clima => {
@@ -421,6 +520,7 @@ function iniciarVibeCheck(bloco) {
     });
 }
 
+// --- NAVEGAÇÃO ENTRE TELAS ---
 export function mudarVisualizacao(viewId) {
     document.querySelectorAll('main > section').forEach(section => {
         section.classList.remove('active-view');
@@ -533,6 +633,7 @@ function getStatusHTML(bloco) {
     }
 }
 
+// --- RENDERIZAÇÃO DE FAVORITOS (TIMELINE) ---
 export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
     const container = document.getElementById(containerId);
     container.innerHTML = ''; 
@@ -611,7 +712,6 @@ export function renderTimeline(listaBlocos, containerId = 'lista-favoritos') {
 
 function criarCardTimeline(bloco) {
     const article = document.createElement('article');
-    // Consistência visual com os cards principais
     const publicoTexto = getPublicoDoBloco(bloco);
     const config = getAudienceConfig(publicoTexto);
     

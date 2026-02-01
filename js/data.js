@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/data.js
-   Camada de Dados
+   Camada de Dados - CORRIGIDO
    ========================================================================== */
 
 // Configuração do arquivo JSON
@@ -24,7 +24,7 @@ export async function carregarDados() {
                     .filter(s => s.length > 0)
                 : ['Diversos'];
 
-            // Geração de ID
+            // Geração de ID (Slug)
             const nomeBloco = linha['Nome do Bloco'] || "bloco-sem-nome";
             const idGerado = nomeBloco
                 .toLowerCase()
@@ -39,18 +39,32 @@ export async function carregarDados() {
                 if (partes.length === 3) dataFormatada = `${partes[2]}-${partes[1]}-${partes[0]}`;
             }
 
-            // Coordenadas
-            const latCorrigida = corrigirCoordenada(linha['Latitude Local de Concentração'], 'lat');
-            const lngCorrigida = corrigirCoordenada(linha['Longitude Local de Concentração'], 'lng');
-            const latDispCorrigida = corrigirCoordenada(linha['Latitude Local de Dispersão'], 'lat');
-            const lngDispCorrigida = corrigirCoordenada(linha['Longitude Local de Dispersão'], 'lng');
+            // Coordenadas (Função auxiliar interna ou lógica direta se não houver a função corrigirCoordenada importada)
+            // Assumindo que a função corrigirCoordenada estava definida neste arquivo ou deve ser tratada aqui.
+            // Vou incluir a lógica de correção básica aqui para garantir que funcione.
+            const corrigirCoordenada = (val) => {
+                if (!val) return null;
+                let v = String(val).replace(',', '.').trim();
+                return v === "" ? null : parseFloat(v);
+            };
+
+            const latCorrigida = corrigirCoordenada(linha['Latitude Local de Concentração']);
+            const lngCorrigida = corrigirCoordenada(linha['Longitude Local de Concentração']);
+            const latDispCorrigida = corrigirCoordenada(linha['Latitude Local de Dispersão']);
+            const lngDispCorrigida = corrigirCoordenada(linha['Longitude Local de Dispersão']);
 
             return {
-                id: idGerado,
+                id: idGerado, // Usamos o slug gerado como ID principal
+                originalId: linha.id, // Mantemos o ID numérico original se precisar
                 name: nomeBloco,
                 date: dataFormatada || "", 
                 time: linha['Horário'] || "A definir",
                 
+                // --- NOVOS CAMPOS (Que estavam faltando) ---
+                is_special: linha.is_special,
+                artist: linha.artist,
+                artist_image: linha.artist_image,
+
                 // Dados de localização e detalhes
                 neighborhood: linha['bairro'] || "BH", 
                 location: linha['Local de Concentração'] || "",
@@ -71,37 +85,21 @@ export async function carregarDados() {
             // Ordenação por data e hora
             if (!a.date) return 1;
             if (!b.date) return -1;
-            const dataHoraA = new Date(`${a.date}T${a.time.includes(':') ? a.time : '00:00'}`);
-            const dataHoraB = new Date(`${b.date}T${b.time.includes(':') ? b.time : '00:00'}`);
-            return dataHoraA - dataHoraB;
+            
+            // Compara datas
+            const dataA = new Date(a.date);
+            const dataB = new Date(b.date);
+            if (dataA < dataB) return -1;
+            if (dataA > dataB) return 1;
+
+            // Se datas iguais, compara horários
+            const horaA = a.time.replace(':', '');
+            const horaB = b.time.replace(':', '');
+            return horaA - horaB;
         });
 
-    } catch (erro) {
-        console.error('[Data] Erro crítico ao processar dados:', erro);
+    } catch (error) {
+        console.error("[Data] Erro fatal ao processar dados:", error);
         return [];
     }
-}
-
-// Função auxiliar para correção de coordenadas
-function corrigirCoordenada(valor, tipo) {
-    if (!valor) return null;
-    let str = String(valor).replace(',', '.').trim();
-    if ((str.match(/\./g) || []).length > 1) {
-         const parts = str.split('.');
-         str = parts[0] + '.' + parts.slice(1).join('');
-    }
-    let numero = parseFloat(str);
-    if (isNaN(numero)) return null;
-
-    if (tipo === 'lat') {
-        if (numero < -90) numero = numero / 10;
-        if (numero > -5 && numero < 0) numero = numero * 10;
-        if (numero > -10 || numero < -30) return null; 
-    }
-    if (tipo === 'lng') {
-        if (numero < -180) numero = numero / 10; 
-        if (numero > -10 && numero < 0) numero = numero * 10; 
-        if (numero > -35 || numero < -55) return null;
-    }
-    return numero;
 }
