@@ -1,6 +1,6 @@
 /* ==========================================================================
    js/ui.js
-   Camada de Interface - COMPLETO E CORRIGIDO
+   Camada de Interface - COMPLETO E CORRIGIDO (Scroll Infinito + Drag Mouse)
    ========================================================================== */
 
 import { isFavorito, isCheckedIn, toggleFavorito } from './storage.js';
@@ -12,9 +12,6 @@ let unsubscribeVibe = null;
 
 // --- FUNÇÕES AUXILIARES DE ESTILO E LÓGICA ---
 
-/**
- * Retorna a configuração de estilo baseada no público.
- */
 function getAudienceConfig(publico) {
     if (!publico) return { css: 'aud-todos', icon: 'fas fa-globe-americas', emoji: '🎉' };
 
@@ -88,13 +85,12 @@ function getCountdownHTML(dataStr, horaStr) {
     return '<div class="hype-counter" style="background:#FF2A00; color:#FFF;">🚀 PREPARA! É JÁ JÁ!</div>';
 }
 
-// --- FUNÇÃO PARA RENDERIZAR CARROSSEL DE DESTAQUES (COM AUTO-SCROLL CORRIGIDO) ---
+// --- CARROSSEL DE DESTAQUES (CORRIGIDO: DRAG & LOOP) ---
 export function renderDestaques(todosBlocos) {
     const container = document.getElementById('carousel-destaques');
     if (!container) return;
 
     // Filtra blocos especiais com imagem
-    // Aceita true (boolean) ou "true" (string)
     const destaquesOriginais = todosBlocos.filter(b => 
         (b.is_special === true || b.is_special === "true") && b.artist_image
     );
@@ -104,9 +100,8 @@ export function renderDestaques(todosBlocos) {
         return;
     }
 
-    // DUPLICAR A LISTA: Garante itens suficientes para o scroll contínuo
+    // DUPLICAR A LISTA: Garante itens suficientes para o scroll infinito
     let listaFinal = [...destaquesOriginais];
-    // Garante no mínimo 4 cópias para ter fluxo contínuo mesmo com poucos destaques
     while (listaFinal.length < 10) { 
         listaFinal = [...listaFinal, ...destaquesOriginais];
     }
@@ -114,19 +109,30 @@ export function renderDestaques(todosBlocos) {
     container.innerHTML = '';
     container.style.display = 'flex';
 
-    // Cria o wrapper do scroll
     const wrapper = document.createElement('div');
     wrapper.className = 'destaques-wrapper';
     
-    // --- CORREÇÃO DO SCROLL TRAVADO ---
-    // Sobrescreve o CSS para evitar conflito com a animação JS
+    // Configurações para scroll manual suave
     wrapper.style.scrollBehavior = 'auto'; 
-    wrapper.style.overflowX = 'hidden'; 
+    wrapper.style.overflowX = 'auto'; 
+    wrapper.style.cursor = 'grab'; // Indica que é arrastável
+    wrapper.style.scrollbarWidth = 'none'; // Firefox
+    wrapper.style.msOverflowStyle = 'none'; // IE/Edge
 
     listaFinal.forEach(bloco => {
         const card = document.createElement('div');
         card.className = 'destaque-card';
-        card.onclick = () => mostrarDetalhes(bloco);
+        // Previne clique acidental ao arrastar
+        card.onclick = (e) => {
+            if (wrapper.classList.contains('dragging')) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            mostrarDetalhes(bloco);
+        };
+        // Previne arrastar a imagem fantasma
+        card.ondragstart = (e) => e.preventDefault();
 
         const data = bloco.date || bloco['Data'];
         const dataFormatada = data ? (data.includes('-') ? data.split('-').reverse().slice(0, 2).join('/') : data.substring(0, 5)) : '';
@@ -136,7 +142,7 @@ export function renderDestaques(todosBlocos) {
 
         card.innerHTML = `
             <div class="destaque-img-container">
-                <img src="${bloco.artist_image}" alt="${artista}" class="destaque-img" loading="lazy">
+                <img src="${bloco.artist_image}" alt="${artista}" class="destaque-img" loading="lazy" style="pointer-events: none;">
                 <div class="destaque-overlay"></div>
                 <span class="destaque-badge">⭐ Destaque</span>
             </div>
@@ -153,35 +159,90 @@ export function renderDestaques(todosBlocos) {
 
     container.appendChild(wrapper);
 
-    // --- LÓGICA DE ANIMAÇÃO ---
+    // --- LÓGICA DE ANIMAÇÃO E INTERAÇÃO ---
     let isPaused = false;
     let scrollPos = 0;
-    const speed = 1.0; 
+    const speed = 0.8; 
+    
+    // Variáveis para Drag com Mouse (Desktop)
+    let isDown = false;
+    let startX;
+    let scrollLeftStart;
 
     // Cálculo da largura: Card (280px) + Gap (16px) = 296px
     const itemWidth = 296; 
-    // O ponto de reset é quando rolamos o equivalente à lista ORIGINAL de itens
     const resetPoint = destaquesOriginais.length * itemWidth;
 
     function animateScroll() {
-        if (!isPaused && wrapper) {
-            scrollPos += speed;
-            
-            // Loop infinito: Se passou do ponto de reset, volta o scroll para 0 (sem o usuário perceber)
-            // Isso funciona porque a lista está duplicada visualmente
-            if (scrollPos >= resetPoint) {
-                scrollPos = 0;
-            }
-            
-            wrapper.scrollLeft = scrollPos;
+        if (!wrapper) return;
+
+        // Se o scroll passou do ponto de reset, volta magicamente para o início (loop)
+        // Fazemos isso independente de estar pausado ou não para garantir integridade
+        if (wrapper.scrollLeft >= resetPoint) {
+            // Subtrai exatamente o resetPoint para não dar salto visual
+            const diff = wrapper.scrollLeft - resetPoint;
+            wrapper.scrollLeft = diff;
+            scrollPos = diff;
         }
+
+        if (!isPaused && !isDown) {
+            scrollPos += speed;
+            wrapper.scrollLeft = scrollPos;
+        } else {
+            // Se está pausado (mouse em cima ou tocando), atualizamos a posição
+            // para que ao soltar ele continue de onde parou, sem pular
+            scrollPos = wrapper.scrollLeft;
+        }
+        
         requestAnimationFrame(animateScroll);
     }
 
-    // Controles de Pausa
-    wrapper.addEventListener('mouseenter', () => isPaused = true);
-    wrapper.addEventListener('mouseleave', () => isPaused = false);
-    wrapper.addEventListener('touchstart', () => isPaused = true);
+    // --- Eventos de Mouse (Desktop Drag) ---
+    wrapper.addEventListener('mousedown', (e) => {
+        isDown = true;
+        isPaused = true;
+        wrapper.classList.add('active');
+        wrapper.style.cursor = 'grabbing';
+        startX = e.pageX - wrapper.offsetLeft;
+        scrollLeftStart = wrapper.scrollLeft;
+        
+        // Remove flag de "arrastando" para permitir clique se for rápido
+        setTimeout(() => wrapper.classList.remove('dragging'), 100);
+    });
+
+    wrapper.addEventListener('mouseleave', () => {
+        isDown = false;
+        isPaused = false;
+        wrapper.style.cursor = 'grab';
+        wrapper.classList.remove('active');
+    });
+
+    wrapper.addEventListener('mouseup', () => {
+        isDown = false;
+        wrapper.style.cursor = 'grab';
+        wrapper.classList.remove('active');
+        // Pequeno delay para voltar a animar
+        setTimeout(() => isPaused = false, 1000);
+        // Remove a flag de dragging logo após soltar
+        setTimeout(() => wrapper.classList.remove('dragging'), 50);
+    });
+
+    wrapper.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - wrapper.offsetLeft;
+        const walk = (x - startX) * 1.5; // Velocidade do arrasto
+        wrapper.scrollLeft = scrollLeftStart - walk;
+        
+        // Se moveu mais que 5 pixels, considera que está arrastando (bloqueia clique)
+        if (Math.abs(walk) > 5) {
+            wrapper.classList.add('dragging');
+        }
+    });
+
+    // --- Eventos de Touch (Mobile) ---
+    // Mobile já tem scroll nativo com overflow-x: auto, só precisamos pausar
+    wrapper.addEventListener('touchstart', () => isPaused = true, { passive: true });
     wrapper.addEventListener('touchend', () => setTimeout(() => isPaused = false, 1000));
 
     // Inicia o loop
