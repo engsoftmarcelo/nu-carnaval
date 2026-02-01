@@ -1,9 +1,9 @@
 /* ==========================================================================
    js/data.js
-   Camada de Dados - ATUALIZADO PARA blocos_site.json
+   Camada de Dados
    ========================================================================== */
 
-// 1. MUDANÇA AQUI: Aponte para o novo nome do arquivo
+// Configuração do arquivo JSON
 const DATA_URL = './data/blocos_site.json';
 
 export async function carregarDados() {
@@ -51,26 +51,24 @@ export async function carregarDados() {
                 date: dataFormatada || "", 
                 time: linha['Horário'] || "A definir",
                 
-                // 2. MUDANÇA AQUI: Agora pegamos o bairro direto do JSON
+                // Dados de localização e detalhes
                 neighborhood: linha['bairro'] || "BH", 
-                
                 location: linha['Local de Concentração'] || "",
                 locationEnd: linha['Local de Dispersão'] || "",
                 musical_style: estilos,
-                
-                // 3. MUDANÇA AQUI: Mapeando a nova descrição
                 description: linha['descrisao'] || "", 
                 
-                // Novos campos úteis que seu JSON tem
-                audience: linha['Público-Alvo Principal'] || "Todos",
-                
+                // Coordenadas normalizadas
                 lat: latCorrigida,
                 lng: lngCorrigida,
                 latDisp: latDispCorrigida, 
                 lngDisp: lngDispCorrigida, 
+                
+                // Nome normalizado para busca
                 normalized_name: nomeBloco.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
             };
         }).sort((a, b) => {
+            // Ordenação por data e hora
             if (!a.date) return 1;
             if (!b.date) return -1;
             const dataHoraA = new Date(`${a.date}T${a.time.includes(':') ? a.time : '00:00'}`);
@@ -84,7 +82,7 @@ export async function carregarDados() {
     }
 }
 
-// Mantivemos a função de corrigir coordenada pois ela é segura
+// Função auxiliar para correção de coordenadas
 function corrigirCoordenada(valor, tipo) {
     if (!valor) return null;
     let str = String(valor).replace(',', '.').trim();

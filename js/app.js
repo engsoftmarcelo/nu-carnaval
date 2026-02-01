@@ -1,7 +1,7 @@
 /* ==========================================================================
    js/app.js
    Ponto de entrada da aplicação - VERSÃO BAIRROS (POLÍGONOS)
-   Inclui: Filtros (Dia, Público, Turno, Estilo), Mapa Interativo, Detalhes.
+   Inclui: Filtros (Dia, Turno, Estilo), Mapa Interativo, Detalhes.
    ========================================================================== */
 
 import { carregarDados } from './data.js';
@@ -45,7 +45,6 @@ const appState = {
         estilo: null,
         dia: null,    // Formato: 'YYYY-MM-DD'
         turno: null,  // Valores: 'manha', 'tarde', 'noite'
-        publico: null, 
         apenasFavoritos: false
     }
 };
@@ -439,23 +438,7 @@ function inicializarFiltrosUI() {
         });
     }
 
-    // 2. Renderizar Públicos
-    const publicosUnicos = new Set();
-    appState.todosBlocos.forEach(b => { if (b.audience) publicosUnicos.add(b.audience.trim()); });
-    const containerPublico = document.getElementById('filter-publico');
-    if (containerPublico) {
-        containerPublico.innerHTML = '';
-        Array.from(publicosUnicos).sort().forEach(pub => {
-            const btn = document.createElement('button');
-            btn.className = 'chip filter-chip';
-            btn.textContent = pub;
-            btn.dataset.type = 'publico'; 
-            btn.dataset.value = pub;
-            containerPublico.appendChild(btn);
-        });
-    }
-
-    // 3. Renderizar Estilos
+    // 2. Renderizar Estilos
     const estilosUnicos = new Set();
     appState.todosBlocos.forEach(b => {
         if (b.musical_style) b.musical_style.forEach(s => { if(s) estilosUnicos.add(s.trim()); });
@@ -473,7 +456,7 @@ function inicializarFiltrosUI() {
         });
     }
 
-    // 4. Listeners Globais para os Chips
+    // 3. Listeners Globais para os Chips
     document.querySelectorAll('.filter-chip').forEach(chip => {
         chip.addEventListener('click', (e) => {
             const tipo = e.target.dataset.type;
@@ -493,7 +476,7 @@ function inicializarFiltrosUI() {
         });
     });
 
-    // 5. Botão Toggle do Painel
+    // 4. Botão Toggle do Painel
     const btnToggle = document.getElementById('filter-toggle');
     const panel = document.getElementById('filters-panel');
     if (btnToggle && panel) {
@@ -504,14 +487,13 @@ function inicializarFiltrosUI() {
         });
     }
 
-    // 6. Botão Limpar Filtros
+    // 5. Botão Limpar Filtros
     const btnClean = document.getElementById('btn-clean-filters');
     if (btnClean) {
         btnClean.addEventListener('click', () => {
             appState.filtros.dia = null;
             appState.filtros.turno = null;
             appState.filtros.estilo = null;
-            appState.filtros.publico = null;
             document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
             aplicarFiltros();
         });
@@ -535,8 +517,7 @@ function aplicarFiltros() {
         if (filtros.apenasFavoritos && !favoritosIds.includes(bloco.id)) return false;
         // Dia
         if (filtros.dia && bloco.date !== filtros.dia) return false;
-        // Público
-        if (filtros.publico && bloco.audience !== filtros.publico) return false;
+        
         // Estilo
         if (filtros.estilo) {
             if (!bloco.musical_style) return false;
@@ -559,7 +540,6 @@ function aplicarFiltros() {
     // 1. Se estiver no Mapa
     if (viewAtiva && viewAtiva.id === 'view-mapa') {
         // atualizarMarcadores() -> REMOVIDO: Map agora usa Bairros Fixos (Polígonos)
-        // Se precisar filtrar bairros por cor no futuro, a lógica entraria aqui.
     } 
     
     // 2. Se estiver nos Favoritos
