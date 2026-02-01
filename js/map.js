@@ -1,7 +1,6 @@
 /* ==========================================================================
    js/map.js
-   Lógica Geoespacial (Leaflet.js) - VERSÃO BAIRROS INTERATIVOS
-   Estrutura: Polígonos de Bairros + Utilitários (Metrô/WC)
+   Lógica Geoespacial (Leaflet.js) - NEO-BRUTALISMO & REGIÕES
    ========================================================================== */
 
 let map = null;
@@ -14,60 +13,95 @@ let metroLayer = null;
 let wcLayer = null;
 let socorroLayer = null;
 
-// --- DADOS DE SOBREVIVÊNCIA (Pontos Fixos Mantidos) ---
-const DADOS_UTILIDADE = [
-    // --- LINHA 1: METRÔ BH ---
-    { type: 'metro', name: 'Estação Eldorado', lat: -19.9329, lng: -44.0277, info: '🚨 Abre 05h Sábado (01/03)! Terminal Oeste.' },
-    { type: 'metro', name: 'Estação Cidade Industrial', lat: -19.9365, lng: -44.0173, info: 'Acesso Barreiro/Industrial.' },
-    { type: 'metro', name: 'Estação Vila Oeste', lat: -19.9312, lng: -43.9984, info: 'Funcionamento 05h15 às 23h.' },
-    { type: 'metro', name: 'Estação Gameleira', lat: -19.9275, lng: -43.9881, info: 'Acesso Expominas.' },
-    { type: 'metro', name: 'Estação Calafate', lat: -19.9238, lng: -43.9749, info: 'Acesso Blocos Zona Oeste.' },
-    { type: 'metro', name: 'Estação Carlos Prates', lat: -19.9168, lng: -43.9576, info: 'Aberto até 23h.' },
-    { type: 'metro', name: 'Estação Lagoinha', lat: -19.9126, lng: -43.9431, info: '💡 Evite a Central. Desça aqui.' },
-    { type: 'metro', name: 'Estação Central', lat: -19.9157, lng: -43.9353, info: '⚠️ Entrada APENAS r. Aarão Reis.' },
-    { type: 'metro', name: 'Estação Santa Efigênia', lat: -19.9189, lng: -43.9231, info: 'Acesso Área Hospitalar.' },
-    { type: 'metro', name: 'Estação Santa Tereza', lat: -19.9135, lng: -43.9142, info: '🔥 Coração do Carnaval.' },
-    { type: 'metro', name: 'Estação Horto Florestal', lat: -19.8974, lng: -43.9161, info: 'Alternativa tranquila ao Leste.' },
-    { type: 'metro', name: 'Estação Santa Inês', lat: -19.8887, lng: -43.9153, info: 'Acesso rápido a Santa Tereza.' },
-    { type: 'metro', name: 'Estação José Cândido', lat: -19.8828, lng: -43.9202, info: 'Melhor descida para Pena de Pavão.' },
-    { type: 'metro', name: 'Estação Minas Shopping', lat: -19.8735, lng: -43.9255, info: 'Acesso Shopping e Hotéis.' },
-    { type: 'metro', name: 'Estação São Gabriel', lat: -19.8544, lng: -43.9197, info: '🚨 Abre 05h Sábado (01/03)!' },
-    { type: 'metro', name: 'Estação Primeiro de Maio', lat: -19.8402, lng: -43.9261, info: 'Metrô Ativo.' },
-    { type: 'metro', name: 'Estação Waldomiro Lobo', lat: -19.8331, lng: -43.9333, info: 'Acesso Norte.' },
-    { type: 'metro', name: 'Estação Floramar', lat: -19.8228, lng: -43.9435, info: 'Estação tranquila.' },
-    { type: 'metro', name: 'Estação Vilarinho', lat: -19.8145, lng: -43.9515, info: '🚨 Abre 05h Sábado (01/03)!' },
+// --- CONFIGURAÇÃO DE REGIÕES (Replicada para garantir autonomia do Map.js) ---
+const REGION_MAP_GEO = {
+    'sul': { color: '#E91E63', icon: 'fas fa-martini-glass-citrus' },
+    'centro': { color: '#FF2A00', icon: 'fas fa-building' },
+    'leste': { color: '#9C27B0', icon: 'fas fa-guitar' },
+    'pampulha': { color: '#00B0FF', icon: 'fas fa-water' },
+    'norte': { color: '#FF9100', icon: 'fas fa-road' },
+    'oeste': { color: '#FFC107', icon: 'fas fa-sun' },
+    'barreiro': { color: '#D50000', icon: 'fas fa-industry' },
+    'default': { color: '#1A1A1A', icon: 'fas fa-map-pin' }
+};
 
-    // --- INFRAESTRUTURA DE SAÚDE E WC ---
+function getRegionGeoConfig(bairro) {
+    if (!bairro) return REGION_MAP_GEO['default'];
+    const b = bairro.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
+    if (b.includes('savassi') || b.includes('funcionarios') || b.includes('lurdes') || b.includes('sion')) return REGION_MAP_GEO['sul'];
+    if (b.includes('centro') || b.includes('floresta') || b.includes('barro preto')) return REGION_MAP_GEO['centro'];
+    if (b.includes('tereza') || b.includes('santa efigenia') || b.includes('horto')) return REGION_MAP_GEO['leste'];
+    if (b.includes('pampulha') || b.includes('jaragua') || b.includes('ouro preto')) return REGION_MAP_GEO['pampulha'];
+    if (b.includes('norte') || b.includes('venda nova')) return REGION_MAP_GEO['norte'];
+    if (b.includes('oeste') || b.includes('prado') || b.includes('gutierrez')) return REGION_MAP_GEO['oeste'];
+    if (b.includes('barreiro')) return REGION_MAP_GEO['barreiro'];
+    
+    return REGION_MAP_GEO['default'];
+}
+
+// --- DADOS DE SOBREVIVÊNCIA (Pontos Fixos) ---
+const DADOS_UTILIDADE = [
+    // Metrô (Mantido)
+    { type: 'metro', name: 'Estação Eldorado', lat: -19.9329, lng: -44.0277, info: '🚨 Abre 05h Sábado! Terminal Oeste.' },
+    { type: 'metro', name: 'Estação Cidade Industrial', lat: -19.9365, lng: -44.0173, info: 'Acesso Barreiro.' },
+    { type: 'metro', name: 'Estação Gameleira', lat: -19.9275, lng: -43.9881, info: 'Acesso Expominas.' },
+    { type: 'metro', name: 'Estação Calafate', lat: -19.9238, lng: -43.9749, info: 'Acesso Zona Oeste.' },
+    { type: 'metro', name: 'Estação Lagoinha', lat: -19.9126, lng: -43.9431, info: '💡 Evite a Central. Desça aqui.' },
+    { type: 'metro', name: 'Estação Central', lat: -19.9157, lng: -43.9353, info: '⚠️ Acesso R. Aarão Reis.' },
+    { type: 'metro', name: 'Estação Santa Tereza', lat: -19.9135, lng: -43.9142, info: '🔥 Coração do Carnaval.' },
+    { type: 'metro', name: 'Estação Santa Efigênia', lat: -19.9189, lng: -43.9231, info: 'Área Hospitalar.' },
+    { type: 'metro', name: 'Estação Minas Shopping', lat: -19.8735, lng: -43.9255, info: 'Shopping e Hotéis.' },
+    { type: 'metro', name: 'Estação Vilarinho', lat: -19.8145, lng: -43.9515, info: '🚨 Abre 05h Sábado!' },
+
+    // Saúde e WC
     { type: 'socorro', name: 'PMA Central (CRJ)', lat: -19.9155, lng: -43.9355, info: '🏥 Urgência 24h.' },
-    { type: 'wc', name: 'Banheiros Fixos - Centro', lat: -19.9155, lng: -43.9335, info: 'Bolsão Praça da Estação.' },
-    { type: 'wc', name: 'Banheiros Fixos - Savassi', lat: -19.932051, lng: -43.938046, info: 'Quarteirões Fechados.' },
-    { type: 'wc', name: 'Banheiros - Sapucaí', lat: -19.918, lng: -43.928, info: 'Mirante / Químicos.' }
+    { type: 'wc', name: 'Banheiros Praça da Estação', lat: -19.9155, lng: -43.9335, info: 'Bolsão de Banheiros.' },
+    { type: 'wc', name: 'Banheiros Savassi', lat: -19.932051, lng: -43.938046, info: 'Quarteirões Fechados.' },
+    { type: 'wc', name: 'Banheiros Sapucaí', lat: -19.918, lng: -43.928, info: 'Mirante / Químicos.' }
 ];
 
-// Helper: Normalizar texto para comparação (ex: "Santa Tereza" == "santa tereza")
+// Helper: Normalizar texto
 function normalizarTexto(texto) {
     return texto ? texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 }
 
+// --- ÍCONES NEO-BRUTALISTAS (Quadrados, Borda Grossa, Sombra) ---
 const criarIconeUtilidade = (tipo) => {
     let iconClass = '';
     let color = '';
-    let bgColor = '#FFFFFF';
+    let bg = '#FFF';
     
     switch(tipo) {
-        case 'metro': iconClass = 'fas fa-subway'; color = '#6600FF'; break;
-        case 'wc': iconClass = 'fas fa-restroom'; color = '#00C853'; break;
-        case 'socorro': iconClass = 'fas fa-briefcase-medical'; color = '#FF2A00'; break;
+        case 'metro': iconClass = 'fas fa-subway'; color = '#FFFFFF'; bg = '#6600FF'; break; // Roxo Metrô
+        case 'wc': iconClass = 'fas fa-restroom'; color = '#1A1A1A'; bg = '#00C853'; break; // Verde
+        case 'socorro': iconClass = 'fas fa-briefcase-medical'; color = '#FFFFFF'; bg = '#FF2A00'; break; // Vermelho
     }
     
+    // HTML do ícone quadrado com sombra dura
+    const html = `
+        <div style="
+            background: ${bg};
+            width: 32px;
+            height: 32px;
+            border: 2px solid #000;
+            box-shadow: 4px 4px 0px #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px; /* Levemente arredondado, mas quadrado */
+            transition: transform 0.1s;
+        ">
+            <i class="${iconClass}" style="color:${color}; font-size:16px;"></i>
+        </div>
+    `;
+
     return L.divIcon({
         className: 'custom-util-icon',
-        html: `<div style="background:${bgColor}; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #1A1A1A; box-shadow: 3px 3px 0px rgba(0,0,0,0.3);">
-             <i class="${iconClass}" style="color:${color}; font-size:18px;"></i>
-           </div>`,
-        iconSize: [34, 34],
-        iconAnchor: [17, 17],
-        popupAnchor: [0, -18]
+        html: html,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -20]
     });
 };
 
@@ -76,38 +110,41 @@ export async function initMap(blocos) {
     const container = document.getElementById('mapa-container');
     if (!container) return;
 
-    // 1. Guarda os blocos para filtrar quando clicar no bairro
     todosBlocosCache = blocos;
 
-    // 2. Inicializa o mapa (Centro de BH)
     if (map) map.remove();
     map = L.map('mapa-container', { zoomControl: false }).setView([-19.916681, -43.934493], 12);
     
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // Tiles (CartoDB Voyager - Limpo)
+    // Tiles (CartoDB Voyager - Limpo e com Contraste)
     const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        attribution: '© OpenStreetMap © CARTO',
         maxZoom: 19
     }).addTo(map);
     
+    // Filtro CSS no mapa para ficar mais "clean/cinza" e destacar os blocos coloridos
     tiles.getContainer().style.filter = 'grayscale(100%) contrast(1.1)';
 
-    // 3. Inicializa Camadas de Utilidade
+    // Inicializa Camadas
     metroLayer = L.layerGroup();
-    wcLayer = L.layerGroup().addTo(map); // Banheiros visíveis por padrão
+    wcLayer = L.layerGroup().addTo(map);
     socorroLayer = L.layerGroup();
 
     DADOS_UTILIDADE.forEach(item => {
         const marker = L.marker([item.lat, item.lng], { icon: criarIconeUtilidade(item.type) })
-            .bindPopup(`<div class="map-popup"><h3 style="color:#1A1A1A">${item.name}</h3><p>${item.info}</p></div>`);
+            .bindPopup(`
+                <div class="map-popup" style="font-family:'Manrope',sans-serif; text-align:center;">
+                    <h3 style="color:#000; margin-bottom:4px; font-family:'Anton',sans-serif; text-transform:uppercase;">${item.name}</h3>
+                    <p style="font-size:0.9rem;">${item.info}</p>
+                </div>
+            `);
         
         if (item.type === 'metro') metroLayer.addLayer(marker);
         else if (item.type === 'wc') wcLayer.addLayer(marker);
         else if (item.type === 'socorro') socorroLayer.addLayer(marker);
     });
 
-    // Controle de Camadas
     const overlayMaps = {
         "<i class='fas fa-restroom'></i> Banheiros": wcLayer,
         "<i class='fas fa-subway'></i> Metrô": metroLayer,
@@ -117,7 +154,7 @@ export async function initMap(blocos) {
 
     setupGeoButton();
 
-    // 4. Carrega e Renderiza os Bairros (GeoJSON)
+    // Carrega GeoJSON
     try {
         const response = await fetch('./data/BAIRRO_OFICIAL.json');
         if (!response.ok) throw new Error('Falha ao carregar GeoJSON');
@@ -125,50 +162,49 @@ export async function initMap(blocos) {
         renderizarBairros(bairrosData);
     } catch (error) {
         console.error("Erro ao carregar bairros:", error);
-        alert("Erro ao carregar o mapa de bairros.");
     }
 }
 
-// --- LÓGICA DE RENDERIZAÇÃO DOS BAIRROS ---
+// --- RENDERIZAÇÃO DOS BAIRROS ---
 function renderizarBairros(geoJsonData) {
-    // Estilos
     const defaultStyle = {
-        color: "#6200ea",      // Roxo Nubank
+        color: "#666",      
         weight: 1,
-        fillColor: "#6200ea",
+        fillColor: "#ccc",
         fillOpacity: 0.1
     };
 
+    // Estilo Hover mais agressivo (Brutalista)
     const hoverStyle = {
-        weight: 3,
-        fillOpacity: 0.4,
-        color: "#00b0ff"       // Azul destaque
+        weight: 4,              // Borda grossa
+        color: "#000",          // Borda preta
+        fillColor: "#00B0FF",   // Azul cyan
+        fillOpacity: 0.4
     };
 
     const activeStyle = {
-        weight: 3,
-        fillOpacity: 0.6,
-        color: "#FF2A00"       // Laranja/Vermelho clicado
+        weight: 4,
+        color: "#000",
+        fillColor: "#FF2A00",   // Laranja Neon
+        fillOpacity: 0.6
     };
 
-    // Layer GeoJSON
     geoJsonLayer = L.geoJSON(geoJsonData, {
         style: defaultStyle,
         onEachFeature: function (feature, layer) {
             
-            // Tooltip com nome do bairro
             if (feature.properties && feature.properties.NOME) {
                 layer.bindTooltip(feature.properties.NOME, {
                     permanent: false, 
                     direction: 'center',
-                    className: 'bairro-tooltip'
+                    className: 'bairro-tooltip' // CSS customizado pode ser adicionado
                 });
             }
 
-            // Hover
             layer.on('mouseover', function () {
-                if(this !== window.selectedLayer) { // Não muda se estiver selecionado
+                if(this !== window.selectedLayer) {
                     this.setStyle(hoverStyle);
+                    this.bringToFront(); // Traz para frente para ver a borda grossa
                 }
             });
             
@@ -178,18 +214,15 @@ function renderizarBairros(geoJsonData) {
                 }
             });
 
-            // Clique: Filtra blocos e notifica o App
             layer.on('click', function (e) {
-                // Reset visual do anterior
                 if (window.selectedLayer) {
                     geoJsonLayer.resetStyle(window.selectedLayer);
                 }
                 
-                // Marca o atual
                 window.selectedLayer = layer;
                 layer.setStyle(activeStyle);
+                layer.bringToFront();
                 
-                // Zoom no bairro
                 map.fitBounds(e.target.getBounds());
 
                 const nomeBairro = feature.properties.NOME;
@@ -199,18 +232,14 @@ function renderizarBairros(geoJsonData) {
     }).addTo(map);
 }
 
-// Filtra os dados e dispara evento para o app.js
 function filtrarEExibirBlocosDoBairro(nomeBairro) {
     const nomeNormalizado = normalizarTexto(nomeBairro);
 
     const blocosDoBairro = todosBlocosCache.filter(bloco => 
-        normalizarTexto(bloco.neighborhood) === nomeNormalizado || // Tenta achar no campo neighborhood
-        normalizarTexto(bloco.bairro) === nomeNormalizado          // Ou no campo bairro (caso varie)
+        normalizarTexto(bloco.neighborhood) === nomeNormalizado || 
+        normalizarTexto(bloco.bairro) === nomeNormalizado
     );
 
-    console.log(`Bairro: ${nomeBairro} | Blocos: ${blocosDoBairro.length}`);
-
-    // Cria evento customizado para o app.js ouvir
     const event = new CustomEvent('bairroSelecionado', { 
         detail: { 
             bairro: nomeBairro, 
@@ -220,7 +249,7 @@ function filtrarEExibirBlocosDoBairro(nomeBairro) {
     window.dispatchEvent(event);
 }
 
-// --- GEOLOCALIZAÇÃO (Mantida) ---
+// --- GEOLOCALIZAÇÃO ---
 function setupGeoButton() {
     const btnGeo = document.getElementById('btn-geo');
     if(!btnGeo) return;
@@ -240,16 +269,17 @@ function setupGeoButton() {
 
                 if (userMarker) map.removeLayer(userMarker);
 
+                // Marcador do Usuário: Círculo com borda MUITO grossa
                 userMarker = L.circleMarker(userPos, {
-                    radius: 12,
-                    fillColor: "#CCFF00",
-                    color: "#1A1A1A",
-                    weight: 3,
+                    radius: 10,
+                    fillColor: "#CCFF00", // Verde Neon
+                    color: "#000",        // Preto
+                    weight: 4,            // Borda grossa
                     opacity: 1,
                     fillOpacity: 1
                 }).addTo(map);
 
-                userMarker.bindPopup("<b>Você</b><br>Buscando folia").openPopup();
+                userMarker.bindPopup("<b>Você tá aqui ó!</b>").openPopup();
                 map.setView(userPos, 15);
                 btnGeo.classList.remove('searching');
             },
@@ -263,7 +293,6 @@ function setupGeoButton() {
     });
 }
 
-// --- FUNÇÃO AUXILIAR: Focar categorias (Metro/Socorro) ---
 export function focarCategoriaNoMapa(categoria) {
     if (!map) return;
 
@@ -284,75 +313,95 @@ export function focarCategoriaNoMapa(categoria) {
     }
 }
 
-// --- PLACEHOLDER: Atualizar Marcadores ---
 export function atualizarMarcadores(blocos) {
-    // Lógica desativada: Blocos agora são acessados via clique no Bairro
-    // Se quiser, pode limpar layers antigos aqui
-    // if (markersLayer) markersLayer.clearLayers();
+    // Função mantida vazia conforme arquitetura original
 }
 
-// --- MAPA DE DETALHES (MINIATURA) ---
+// --- MAPA DE DETALHES (PIN PERSONALIZADO POR REGIÃO) ---
 export function renderDetalheMap(bloco) {
     const containerId = 'detalhe-mapa-interno';
     const container = document.getElementById(containerId);
     
-    // Limpa o container e garante que está visível
     if (!container) return;
     container.innerHTML = ''; 
     container.style.display = 'block';
 
-    // Validação de coordenadas
     if (!bloco.lat || !bloco.lng) {
         container.innerHTML = `
-            <div style="height:100%; display:flex; align-items:center; justify-content:center; background:#f0f0f0; color:#888; text-align:center; padding:20px;">
-                <p>📍 Mapa indisponível para este local.<br><small>${bloco.location || ''}</small></p>
+            <div style="height:100%; display:flex; align-items:center; justify-content:center; background:#f0f0f0; border:2px solid #000; color:#000;">
+                <p style="font-weight:bold;">📍 Mapa off.<br><small>${bloco.location || ''}</small></p>
             </div>`;
         return;
     }
 
-    // Cria o mapa (Instância única ou recriada)
-    // Removemos instância anterior se houver (mas como limpamos innerHTML, o DOM se foi)
-    // Para evitar erro "Map container is already initialized", garantimos que o container está limpo
-    
     const mapDetalhe = L.map(containerId, {
         zoomControl: false,
-        dragging: false,       // Mapa estático (apenas visualização)
+        dragging: false,
         scrollWheelZoom: false,
         doubleClickZoom: false,
         boxZoom: false,
         attributionControl: false
     }).setView([bloco.lat, bloco.lng], 15);
 
-    // Tiles Clean (Voyager)
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         maxZoom: 19
     }).addTo(mapDetalhe);
 
-    // Marcador do Bloco
+    // --- CRIAÇÃO DO PIN PERSONALIZADO ---
+    const bairro = bloco.neighborhood || bloco['bairro'] || "Belo Horizonte";
+    const regConfig = getRegionGeoConfig(bairro); // Pega cor da região
+
+    const pinHtml = `
+        <div style="
+            background-color: ${regConfig.color};
+            width: 36px;
+            height: 36px;
+            border: 2px solid #000;
+            box-shadow: 4px 4px 0px #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFF;
+            font-size: 16px;
+            border-radius: 4px; /* Quadrado */
+        ">
+            <i class="${regConfig.icon}"></i>
+        </div>
+        <div style="
+            width: 0; 
+            height: 0; 
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 10px solid #000;
+            margin: 0 auto;
+            position: relative;
+            top: -2px;
+        "></div>
+    `;
+
     L.marker([bloco.lat, bloco.lng], {
         icon: L.divIcon({
-            className: 'custom-pin',
-            html: `<div style="font-size:2rem; filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.3));">📍</div>`, 
-            iconSize: [30, 30],
-            iconAnchor: [15, 30]
+            className: 'custom-region-pin',
+            html: pinHtml,
+            iconSize: [36, 46],
+            iconAnchor: [18, 46]
         })
     }).addTo(mapDetalhe);
 
-    // Adiciona botão para abrir no App de Mapas externo (Overlay)
+    // Botão Expandir (Estilo Brutalista)
     const overlayBtn = document.createElement('div');
     overlayBtn.style.cssText = `
         position: absolute; bottom: 10px; right: 10px; z-index: 1000;
-        background: white; padding: 6px 12px; border: 2px solid black;
-        font-weight: bold; font-size: 0.8rem; cursor: pointer;
-        box-shadow: 2px 2px 0px rgba(0,0,0,0.2); border-radius: 4px;
-        display: flex; align-items: center; gap: 6px;
+        background: #CCFF00; color: #000; padding: 8px 12px; border: 2px solid black;
+        font-weight: 800; font-size: 0.8rem; cursor: pointer; text-transform: uppercase;
+        box-shadow: 4px 4px 0px #000; display: flex; align-items: center; gap: 6px;
+        transition: transform 0.1s;
     `;
-    overlayBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> <span>Expandir</span>';
+    overlayBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> <span>Abrir Maps</span>';
     overlayBtn.onclick = () => window.open(`https://www.google.com/maps/search/?api=1&query=${bloco.lat},${bloco.lng}`, '_blank');
     
-    // Pequena animação ao passar o mouse
-    overlayBtn.onmouseover = () => overlayBtn.style.transform = "scale(1.05)";
-    overlayBtn.onmouseout = () => overlayBtn.style.transform = "scale(1)";
+    overlayBtn.onmousedown = () => overlayBtn.style.transform = "translate(2px, 2px)";
+    overlayBtn.onmouseup = () => overlayBtn.style.transform = "translate(0, 0)";
 
     container.appendChild(overlayBtn);
 }
